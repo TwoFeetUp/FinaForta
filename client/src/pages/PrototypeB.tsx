@@ -3,13 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import CalculatorInput from "@/components/CalculatorInput";
 import CalculationResults from "@/components/CalculationResults";
 import CTASection from "@/components/CTASection";
+import StepIndicator from "@/components/StepIndicator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import GradientText from "@/components/GradientText";
 import type { CalculatorFormData, CalculationResult } from "@shared/schema";
 
 export default function PrototypeB() {
+  const [step, setStep] = useState<"input" | "results">("input");
   const [results, setResults] = useState<CalculationResult | null>(null);
-  const [showCTA, setShowCTA] = useState(false);
   const { toast } = useToast();
 
   const calculateResults = (data: CalculatorFormData): CalculationResult => {
@@ -38,7 +40,7 @@ export default function PrototypeB() {
   const handleCalculate = (data: CalculatorFormData) => {
     const calculatedResults = calculateResults(data);
     setResults(calculatedResults);
-    setShowCTA(true);
+    setStep("results");
   };
 
   const handleEmailSubmit = (email: string) => {
@@ -73,51 +75,76 @@ export default function PrototypeB() {
     });
   };
 
+  const steps = [
+    {
+      number: 1,
+      label: "Gegevens",
+      completed: step === "results",
+      active: step === "input",
+    },
+    {
+      number: 2,
+      label: "Resultaten",
+      completed: false,
+      active: step === "results",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-foreground">Finaforte</h1>
-              <Badge variant="outline" className="text-xs" data-testid="badge-prototype-b">
-                Prototype B
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">
-              Slimme leningcalculator voor uw vastgoedinvestering
-            </p>
+      <div className="container max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <div className="text-center mb-8 md:mb-10">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <h1 className="text-3xl md:text-4xl">
+              <GradientText animationSpeed={6}>Finaforte</GradientText>
+            </h1>
+            <Badge variant="outline" className="text-xs" data-testid="badge-prototype-b">
+              Prototype B
+            </Badge>
           </div>
+          <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
+            Slimme leningcalculator voor uw vastgoedinvestering
+          </p>
         </div>
 
-        <div className="max-w-2xl mx-auto mb-12">
-          <CalculatorInput onCalculate={handleCalculate} />
-        </div>
+        <StepIndicator steps={steps} />
 
-        <AnimatePresence>
-          {results && (
+        <AnimatePresence mode="wait">
+          {step === "input" && (
             <motion.div
+              key="input"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-2xl mx-auto"
+            >
+              <CalculatorInput onCalculate={handleCalculate} />
+            </motion.div>
+          )}
+
+          {step === "results" && results && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
               className="space-y-12 max-w-4xl mx-auto"
             >
               <CalculationResults results={results} />
-              
-              {showCTA && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                >
-                  <CTASection
-                    onEmailSubmit={handleEmailSubmit}
-                    onEbookDownload={handleEbookDownload}
-                    onQuoteRequest={handleQuoteRequest}
-                    onScheduleAppointment={handleScheduleAppointment}
-                  />
-                </motion.div>
-              )}
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+              >
+                <CTASection
+                  onEmailSubmit={handleEmailSubmit}
+                  onEbookDownload={handleEbookDownload}
+                  onQuoteRequest={handleQuoteRequest}
+                  onScheduleAppointment={handleScheduleAppointment}
+                />
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

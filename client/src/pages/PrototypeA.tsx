@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import CalculatorInput from "@/components/CalculatorInput";
 import CalculationResults from "@/components/CalculationResults";
 import LeadCaptureForm from "@/components/LeadCaptureForm";
+import StepIndicator from "@/components/StepIndicator";
 import { Badge } from "@/components/ui/badge";
+import GradientText from "@/components/GradientText";
 import type { CalculatorFormData, CalculationResult } from "@shared/schema";
 
 export default function PrototypeA() {
@@ -46,22 +48,45 @@ export default function PrototypeA() {
     setStep("results");
   };
 
+  const steps = [
+    {
+      number: 1,
+      label: "Gegevens",
+      completed: step === "lead" || step === "results",
+      active: step === "input",
+    },
+    {
+      number: 2,
+      label: "Contactinfo",
+      completed: step === "results",
+      active: step === "lead",
+    },
+    {
+      number: 3,
+      label: "Resultaten",
+      completed: false,
+      active: step === "results",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-foreground">Finaforte</h1>
-              <Badge variant="outline" className="text-xs" data-testid="badge-prototype-a">
-                Prototype A
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">
-              Slimme leningcalculator voor uw vastgoedinvestering
-            </p>
+      <div className="container max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <div className="text-center mb-8 md:mb-10">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <h1 className="text-3xl md:text-4xl">
+              <GradientText animationSpeed={6}>Finaforte</GradientText>
+            </h1>
+            <Badge variant="outline" className="text-xs" data-testid="badge-prototype-a">
+              Prototype A
+            </Badge>
           </div>
+          <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
+            Slimme leningcalculator voor uw vastgoedinvestering
+          </p>
         </div>
+
+        <StepIndicator steps={steps} />
 
         <AnimatePresence mode="wait">
           {step === "input" && (
