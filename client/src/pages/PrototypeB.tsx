@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import CalculatorInput from "@/components/CalculatorInput";
 import CalculationResults from "@/components/CalculationResults";
 import CTASection from "@/components/CTASection";
-import StepIndicator from "@/components/StepIndicator";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import GradientText from "@/components/GradientText";
+import { ArrowRight, Calculator as CalcIcon, TrendingUp } from "lucide-react";
 import type { CalculatorFormData, CalculationResult } from "@shared/schema";
 
 export default function PrototypeB() {
@@ -75,75 +76,133 @@ export default function PrototypeB() {
     });
   };
 
-  const steps = [
-    {
-      number: 1,
-      label: "Gegevens",
-      completed: step === "results",
-      active: step === "input",
-    },
-    {
-      number: 2,
-      label: "Resultaten",
-      completed: false,
-      active: step === "results",
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
-        <div className="text-center mb-8 md:mb-10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <div className="text-center mb-8 md:mb-12">
           <div className="flex items-center justify-center gap-3 mb-3">
             <h1 className="text-3xl md:text-4xl">
               <GradientText animationSpeed={6}>Finaforte</GradientText>
             </h1>
             <Badge variant="outline" className="text-xs" data-testid="badge-prototype-b">
-              Prototype B
+              Prototype B - Cards
             </Badge>
           </div>
           <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-            Slimme leningcalculator voor uw vastgoedinvestering
+            Modern card-based calculator experience
           </p>
         </div>
-
-        <StepIndicator steps={steps} />
 
         <AnimatePresence mode="wait">
           {step === "input" && (
             <motion.div
               key="input"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="max-w-2xl mx-auto"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-5xl mx-auto"
             >
-              <CalculatorInput onCalculate={handleCalculate} />
+              <Card className="border-2 shadow-2xl bg-card/50 backdrop-blur">
+                <CardHeader className="text-center pb-8 pt-10">
+                  <div className="mx-auto rounded-full bg-primary/10 p-4 w-fit mb-6">
+                    <CalcIcon className="h-10 w-10 text-primary" />
+                  </div>
+                  <CardTitle className="text-3xl md:text-4xl mb-3">
+                    Bereken uw lening in 30 seconden
+                  </CardTitle>
+                  <CardDescription className="text-base md:text-lg">
+                    Vul de gegevens in en zie direct uw persoonlijke resultaat
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pb-10">
+                  <div className="max-w-2xl mx-auto">
+                    <CalculatorInput onCalculate={handleCalculate} buttonText="Toon mijn resultaten" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Feature Cards */}
+              <div className="grid md:grid-cols-3 gap-6 mt-8">
+                <Card className="border-primary/20 bg-card/50 backdrop-blur">
+                  <CardContent className="pt-6">
+                    <div className="text-4xl mb-3">⚡</div>
+                    <h3 className="font-semibold mb-2">Direct resultaat</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Geen wachten, zie direct uw berekening
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-primary/20 bg-card/50 backdrop-blur">
+                  <CardContent className="pt-6">
+                    <div className="text-4xl mb-3">🔒</div>
+                    <h3 className="font-semibold mb-2">100% veilig</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Uw gegevens zijn bij ons in goede handen
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-primary/20 bg-card/50 backdrop-blur">
+                  <CardContent className="pt-6">
+                    <div className="text-4xl mb-3">💰</div>
+                    <h3 className="font-semibold mb-2">Beste tarieven</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Vergelijk en kies de beste optie
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </motion.div>
           )}
 
           {step === "results" && results && (
             <motion.div
               key="results"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-12 max-w-4xl mx-auto"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-8 max-w-5xl mx-auto"
             >
-              <CalculationResults results={results} />
+              <Card className="border-2 border-primary/20 shadow-2xl bg-card/50 backdrop-blur">
+                <CardHeader className="text-center">
+                  <div className="mx-auto rounded-full bg-primary/10 p-4 w-fit mb-4">
+                    <TrendingUp className="h-10 w-10 text-primary" />
+                  </div>
+                  <CardTitle className="text-3xl md:text-4xl mb-2">
+                    Uw persoonlijke berekening
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    Hieronder vindt u de resultaten op basis van uw gegevens
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CalculationResults results={results} />
+                </CardContent>
+              </Card>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
-                <CTASection
-                  onEmailSubmit={handleEmailSubmit}
-                  onEbookDownload={handleEbookDownload}
-                  onQuoteRequest={handleQuoteRequest}
-                  onScheduleAppointment={handleScheduleAppointment}
-                />
+                <Card className="border-2 border-primary/20 shadow-xl bg-card/50 backdrop-blur">
+                  <CardHeader className="text-center">
+                    <CardTitle className="text-2xl md:text-3xl mb-2">
+                      Wat wilt u nu doen?
+                    </CardTitle>
+                    <CardDescription className="text-base">
+                      Kies een van de onderstaande opties om verder te gaan
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CTASection
+                      onEmailSubmit={handleEmailSubmit}
+                      onEbookDownload={handleEbookDownload}
+                      onQuoteRequest={handleQuoteRequest}
+                      onScheduleAppointment={handleScheduleAppointment}
+                    />
+                  </CardContent>
+                </Card>
               </motion.div>
             </motion.div>
           )}

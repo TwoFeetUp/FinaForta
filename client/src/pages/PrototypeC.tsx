@@ -1,33 +1,32 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import CalculatorInput from "@/components/CalculatorInput";
 import CalculationResults from "@/components/CalculationResults";
-import StepIndicator from "@/components/StepIndicator";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { User, Mail, Sparkles, ArrowRight, Home as HomeIcon, Building2, Calculator as CalcIcon } from "lucide-react";
 import GradientText from "@/components/GradientText";
-import type { CalculatorFormData, CalculationResult } from "@shared/schema";
+import type { CalculationResult } from "@shared/schema";
 
-type Step = "name" | "calculator" | "email" | "results";
+type Step = "name" | "address" | "propertyType" | "propertyValue" | "loanAmount" | "email" | "results";
 
 export default function PrototypeC() {
   const [step, setStep] = useState<Step>("name");
   const [userName, setUserName] = useState("");
+  const [propertyAddress, setPropertyAddress] = useState("");
+  const [propertyType, setPropertyType] = useState<"woning" | "zakelijk" | "combinatie">("woning");
+  const [propertyValue, setPropertyValue] = useState(500000);
+  const [loanAmount, setLoanAmount] = useState(400000);
   const [userEmail, setUserEmail] = useState("");
-  const [calculatorData, setCalculatorData] = useState<CalculatorFormData | null>(null);
   const [results, setResults] = useState<CalculationResult | null>(null);
 
-  const calculateResults = (data: CalculatorFormData): CalculationResult => {
-    const propertyValue = parseFloat(data.propertyValue);
-    const loanAmount = parseFloat(data.loanAmount);
+  const calculateResults = (): CalculationResult => {
     const ltv = (loanAmount / propertyValue) * 100;
 
     let baseRate = 3.5;
-    if (data.propertyType === "zakelijk") baseRate += 0.5;
+    if (propertyType === "zakelijk") baseRate += 0.5;
     if (ltv > 80) baseRate += 0.5;
     if (ltv > 90) baseRate += 0.75;
 
@@ -44,252 +43,375 @@ export default function PrototypeC() {
     };
   };
 
-  const handleNameSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (userName.trim()) {
-      setStep("calculator");
-    }
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("nl-NL", {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0,
+    }).format(value);
   };
 
-  const handleCalculate = (data: CalculatorFormData) => {
-    setCalculatorData(data);
-    const calculatedResults = calculateResults(data);
-    setResults(calculatedResults);
-    setStep("email");
-  };
-
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (userEmail.trim()) {
-      console.log("Lead captured:", { name: userName, email: userEmail }, "Calculator data:", calculatorData);
-      setStep("results");
-    }
-  };
-
-  const steps = [
-    {
-      number: 1,
-      label: "Welkom",
-      completed: step === "calculator" || step === "email" || step === "results",
-      active: step === "name",
-    },
-    {
-      number: 2,
-      label: "Gegevens",
-      completed: step === "email" || step === "results",
-      active: step === "calculator",
-    },
-    {
-      number: 3,
-      label: "Contact",
-      completed: step === "results",
-      active: step === "email",
-    },
-    {
-      number: 4,
-      label: "Resultaten",
-      completed: false,
-      active: step === "results",
-    },
-  ];
+  const totalSteps = 7;
+  const currentStepNumber =
+    step === "name" ? 1 :
+    step === "address" ? 2 :
+    step === "propertyType" ? 3 :
+    step === "propertyValue" ? 4 :
+    step === "loanAmount" ? 5 :
+    step === "email" ? 6 : 7;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
-        <div className="text-center mb-8 md:mb-10">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <h1 className="text-3xl md:text-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-background flex items-center">
+      <div className="container max-w-4xl mx-auto px-4 md:px-6 py-8">
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <h1 className="text-2xl md:text-3xl">
               <GradientText animationSpeed={6}>Finaforte</GradientText>
             </h1>
             <Badge variant="outline" className="text-xs" data-testid="badge-prototype-c">
-              Prototype C
+              Prototype C - Chat
             </Badge>
           </div>
-          <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-            Slimme leningcalculator voor uw vastgoedinvestering
-          </p>
         </div>
 
-        <StepIndicator steps={steps} />
+        {/* Progress Dots */}
+        {step !== "results" && (
+          <div className="flex justify-center gap-2 mb-8">
+            {Array.from({ length: totalSteps - 1 }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  i + 1 <= currentStepNumber ? "w-8 bg-primary" : "w-2 bg-border"
+                }`}
+              />
+            ))}
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
+          {/* Step 1: Name */}
           {step === "name" && (
             <motion.div
               key="name"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="max-w-2xl mx-auto"
-            >
-              <Card className="w-full" data-testid="card-name-input">
-                <CardHeader className="space-y-1 text-center">
-                  <div className="mx-auto rounded-full bg-primary/10 p-3 w-fit mb-4">
-                    <Sparkles className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-4xl">
-                    <GradientText animationSpeed={6}>Welkom bij Finaforte!</GradientText>
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground text-base pt-2">
-                    Laten we beginnen met kennismaken. Hoe mogen we je noemen?
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleNameSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="text-sm font-medium">
-                        Jouw naam
-                      </Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                          id="name"
-                          type="text"
-                          placeholder="Bijv. Erik"
-                          value={userName}
-                          onChange={(e) => setUserName(e.target.value)}
-                          className="pl-11 h-12 text-lg"
-                          autoFocus
-                          data-testid="input-name"
-                        />
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      size="lg"
-                      disabled={!userName.trim()}
-                      data-testid="button-submit-name"
-                    >
-                      Ga verder
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {step === "calculator" && (
-            <motion.div
-              key="calculator"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
               className="max-w-2xl mx-auto space-y-6"
             >
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-center space-y-2"
-              >
-                <h2 className="text-2xl font-semibold text-foreground">
-                  Hey {userName}! 👋
-                </h2>
-                <p className="text-muted-foreground">
-                  Laten we samen je berekening maken. Vul hieronder de gegevens van je pand in.
-                </p>
-              </motion.div>
-
-              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.2 }}
+                className="flex gap-3"
               >
-                <CalculatorInput
-                  onCalculate={handleCalculate}
-                  buttonText="Bereken voor mij"
-                />
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-lg">
+                    <p className="text-2xl md:text-3xl font-semibold mb-3">Hey! Welkom bij Finaforte 👋</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      Laten we beginnen met kennismaken.<br />
+                      <span className="font-medium text-foreground">Hoe mag ik je noemen?</span>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                <form onSubmit={(e) => { e.preventDefault(); if (userName.trim()) setStep("address"); }} className="space-y-4">
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Typ hier je naam..."
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      className="pl-12 h-14 text-lg rounded-2xl border-2 bg-background"
+                      autoFocus
+                    />
+                  </div>
+                  <Button type="submit" className="w-full h-14 text-lg rounded-2xl" size="lg" disabled={!userName.trim()}>
+                    Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </form>
               </motion.div>
             </motion.div>
           )}
 
+          {/* Step 2: Address */}
+          {step === "address" && (
+            <motion.div
+              key="address"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-2xl mx-auto space-y-6"
+            >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <HomeIcon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-lg">
+                    <p className="text-2xl md:text-3xl font-semibold mb-3">Super {userName}! 🏠</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      <span className="font-medium text-foreground">Wat is het adres van je pand?</span>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                <form onSubmit={(e) => { e.preventDefault(); if (propertyAddress.trim()) setStep("propertyType"); }} className="space-y-4">
+                  <div className="relative">
+                    <HomeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Bijv. Radarweg 29, Amsterdam"
+                      value={propertyAddress}
+                      onChange={(e) => setPropertyAddress(e.target.value)}
+                      className="pl-12 h-14 text-lg rounded-2xl border-2 bg-background"
+                      autoFocus
+                    />
+                  </div>
+                  <Button type="submit" className="w-full h-14 text-lg rounded-2xl" size="lg" disabled={!propertyAddress.trim()}>
+                    Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Step 3: Property Type */}
+          {step === "propertyType" && (
+            <motion.div
+              key="propertyType"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-2xl mx-auto space-y-6"
+            >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-lg">
+                    <p className="text-2xl md:text-3xl font-semibold mb-3">Mooi adres {userName}! 🏗️</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      <span className="font-medium text-foreground">Wat voor type pand is het?</span>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-4">
+                <Select value={propertyType} onValueChange={(value: any) => setPropertyType(value)}>
+                  <SelectTrigger className="h-14 text-lg rounded-2xl border-2 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="woning">🏠 Woning</SelectItem>
+                    <SelectItem value="zakelijk">🏢 Zakelijk</SelectItem>
+                    <SelectItem value="combinatie">🏘️ Combinatie</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={() => setStep("propertyValue")} className="w-full h-14 text-lg rounded-2xl" size="lg">
+                  Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Step 4: Property Value with Slider */}
+          {step === "propertyValue" && (
+            <motion.div
+              key="propertyValue"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-2xl mx-auto space-y-6"
+            >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CalcIcon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-lg">
+                    <p className="text-2xl md:text-3xl font-semibold mb-3">Oké, top! 💰</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      <span className="font-medium text-foreground">Wat is de waarde van je pand?</span>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-6">
+                <div className="bg-card border-2 rounded-3xl p-8">
+                  <div className="text-center mb-6">
+                    <p className="text-4xl md:text-5xl font-bold text-primary mb-2">{formatCurrency(propertyValue)}</p>
+                    <p className="text-sm text-muted-foreground">Waarde van het pand</p>
+                  </div>
+                  <Slider
+                    value={[propertyValue]}
+                    onValueChange={([value]) => setPropertyValue(value)}
+                    min={100000}
+                    max={2000000}
+                    step={10000}
+                    className="mb-4"
+                  />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>€100k</span>
+                    <span>€2M</span>
+                  </div>
+                </div>
+                <Button onClick={() => setStep("loanAmount")} className="w-full h-14 text-lg rounded-2xl" size="lg">
+                  Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Step 5: Loan Amount with Slider */}
+          {step === "loanAmount" && (
+            <motion.div
+              key="loanAmount"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-2xl mx-auto space-y-6"
+            >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CalcIcon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-lg">
+                    <p className="text-2xl md:text-3xl font-semibold mb-3">Perfect {userName}! 📊</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      <span className="font-medium text-foreground">Hoeveel wil je lenen?</span>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-6">
+                <div className="bg-card border-2 rounded-3xl p-8">
+                  <div className="text-center mb-6">
+                    <p className="text-4xl md:text-5xl font-bold text-primary mb-2">{formatCurrency(loanAmount)}</p>
+                    <p className="text-sm text-muted-foreground">Gewenste leningshoogte</p>
+                  </div>
+                  <Slider
+                    value={[loanAmount]}
+                    onValueChange={([value]) => setLoanAmount(value)}
+                    min={50000}
+                    max={Math.min(propertyValue, 1500000)}
+                    step={10000}
+                    className="mb-4"
+                  />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>€50k</span>
+                    <span>{formatCurrency(Math.min(propertyValue, 1500000))}</span>
+                  </div>
+                </div>
+                <Button onClick={() => setStep("email")} className="w-full h-14 text-lg rounded-2xl" size="lg">
+                  Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Step 6: Email */}
           {step === "email" && (
             <motion.div
               key="email"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="max-w-2xl mx-auto"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-2xl mx-auto space-y-6"
             >
-              <Card className="w-full" data-testid="card-email-input">
-                <CardHeader className="space-y-1 text-center">
-                  <div className="mx-auto rounded-full bg-primary/10 p-3 w-fit mb-4">
-                    <Mail className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-2xl font-semibold text-foreground">
-                    Bijna klaar, {userName}!
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground text-base pt-2">
-                    Waar kunnen we je persoonlijke berekening naartoe sturen?
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleEmailSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="text-sm font-medium">
-                        E-mailadres
-                      </Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="jouw.email@voorbeeld.nl"
-                          value={userEmail}
-                          onChange={(e) => setUserEmail(e.target.value)}
-                          className="pl-11 h-12 text-lg"
-                          autoFocus
-                          data-testid="input-email"
-                        />
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      size="lg"
-                      disabled={!userEmail.trim()}
-                      data-testid="button-submit-email"
-                    >
-                      Bekijk mijn berekening
-                    </Button>
-
-                    <p className="text-xs text-center text-muted-foreground">
-                      Door verder te gaan accepteer je onze voorwaarden en privacyverklaring
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Mail className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-lg">
+                    <p className="text-2xl md:text-3xl font-semibold mb-3">Fantastisch {userName}! 🎉</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      Ik heb je berekening klaar staan!<br />
+                      <span className="font-medium text-foreground">Wat is je e-mailadres?</span>
                     </p>
-                  </form>
-                </CardContent>
-              </Card>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (userEmail.trim()) {
+                    console.log("Lead captured:", { name: userName, email: userEmail, address: propertyAddress, propertyType, propertyValue, loanAmount });
+                    const calculatedResults = calculateResults();
+                    setResults(calculatedResults);
+                    setStep("results");
+                  }
+                }} className="space-y-4">
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      placeholder="jouw.email@voorbeeld.nl"
+                      value={userEmail}
+                      onChange={(e) => setUserEmail(e.target.value)}
+                      className="pl-12 h-14 text-lg rounded-2xl border-2 bg-background"
+                      autoFocus
+                    />
+                  </div>
+                  <Button type="submit" className="w-full h-14 text-lg rounded-2xl" size="lg" disabled={!userEmail.trim()}>
+                    Bekijk mijn berekening <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Door verder te gaan accepteer je onze voorwaarden en privacyverklaring
+                  </p>
+                </form>
+              </motion.div>
             </motion.div>
           )}
 
+          {/* Step 7: Results */}
           {step === "results" && results && (
             <motion.div
               key="results"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
               className="max-w-4xl mx-auto space-y-6"
             >
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-center space-y-2"
-              >
-                <h2 className="text-2xl font-semibold text-foreground">
-                  Hier is je berekening, {userName}!
-                </h2>
-                <p className="text-muted-foreground">
-                  We hebben de samenvatting ook naar <span className="font-medium text-foreground">{userEmail}</span> gestuurd
-                </p>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-lg">
+                    <p className="text-2xl md:text-3xl font-semibold mb-3">Gelukt {userName}! 🎊</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      Hier is je persoonlijke berekening. We hebben ook een kopie naar{" "}
+                      <span className="font-medium text-foreground">{userEmail}</span> gestuurd!
+                    </p>
+                  </div>
+                </div>
               </motion.div>
 
-              <CalculationResults results={results} />
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-background/50 backdrop-blur rounded-3xl border-2 p-6">
+                <CalculationResults results={results} />
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
