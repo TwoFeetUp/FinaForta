@@ -1,0 +1,103 @@
+Replit Project Prompt: Ontwikkeling Twee Frontend Prototypes voor Finaforte's Slimme Calculator
+Projectdoelstelling:
+Ontwikkel twee functionele, visueel aantrekkelijke frontend-prototypes van een leningcalculator in een standaard HTML/CSS/JS Replit-omgeving. Het primaire doel van deze prototypes is het A/B-testen van twee verschillende gebruikerservaringen (UX) voor lead-capture. Zoals besproken: "we zouden twee versies kunnen [maken]".
+
+Achtergrond en Strategische Context:
+Dit project is een cruciale "interne user case" voor Finaforte. Hoewel het voor een onderdeel is dat "op geen 5% in de omzet" zit, is de succesvolle implementatie ervan een bewijs voor de potentie van verdere procesautomatisering binnen de hele organisatie. De ambitie is om dit "echt [te] flammen" om de waarde aan te tonen.
+
+De huidige concurrenten, zoals mogelijk.nl en puffer.nl, worden als functioneel, maar qua design en gebruikerservaring als ondermaats beschouwd. Onze prototypes moeten een significant betere "UX en de customer journey" bieden. Het doel is niet alleen een tool, maar een "ervaring van de bezoeker" die superieur is.
+
+
+
+
+Kernfunctionaliteit (Geldt voor beide prototypes):
+De basis van de calculator moet identiek zijn in beide versies.
+
+Invoervelden:
+
+
+Adres van het pand: Dit veld moet een "automatische kadaster lookup voor type pand" simuleren. Wanneer een gebruiker bijvoorbeeld "Radarweg" invult, moet het systeem herkennen dat dit een bedrijfspand is.
+
+
+
+Waarde van het pand (€): Numeriek invoerveld.
+
+Gewenste leningshoogte (€): Numeriek invoerveld.
+
+Type vastgoed: Een dropdown of radiobutton (bijv. Zakelijk, Woning, Combinatie) die eventueel vooraf wordt ingevuld door de gesimuleerde kadaster lookup.
+
+Real-time Berekening & Output:
+Na het invullen en klikken op "Bereken" moeten de volgende indicatieve waarden direct berekend worden:
+
+Loan-to-Value ratio (LTV)
+
+Indicatieve rente
+
+Maandlasten
+
+Aflossing
+
+Specificaties Prototypes
+Je ontwikkelt twee aparte versies met een fundamenteel andere gebruikersflow voor lead-capture.
+
+Prototype A: "Gated Content" / De Hoge Drempel
+Concept:
+Deze versie test de hypothese dat een gebruiker, als hij eenmaal de moeite heeft genomen om data in te vullen, bereid is zijn contactgegevens af te geven om de resultaten te zien. Het creëert een "hoge drempel". De psychologie hierachter is: "dan ben je al halverwege al zo ver dat jij denkt: ja god ik vul er even in!".
+
+Gebruikersflow:
+
+De gebruiker landt op de pagina en ziet de invoervelden voor de leningcalculator.
+
+De gebruiker vult de waarde van het pand en de gewenste lening in.
+
+De gebruiker klikt op de knop (bijv. "Toon mijn resultaten").
+
+Cruciaal: De resultaten worden NIET getoond. In plaats daarvan verbergt het calculator-formulier en verschijnt er een nieuw, verplicht formulier met de tekst: "Bijna klaar! Vul uw gegevens in om uw persoonlijke berekening te zien."
+
+Dit nieuwe formulier vraagt om Naam en E-mailadres.
+
+Nadat de gebruiker zijn contactgegevens heeft ingevuld en op "Bekijk berekening" klikt, wordt dit formulier verborgen en verschijnen eindelijk de berekende resultaten (LTV, rente, etc.). Dit zorgt ervoor dat we "gewoon zijn e-mailadres hebben gepakt" voordat hij wegklikt.
+
+Prototype B: "Instant Value" / De Gebruiksvriendelijke Flow
+Concept:
+Deze versie is gebaseerd op het principe van directe waarde verschaffen om vertrouwen te wekken. De gebruiker krijgt waar hij voor komt (de berekening) zonder barrières. De lead-capture is een logische vervolgstap die wordt aangeboden nadat de waarde is geleverd. Dit moet de "veel betere" ervaring zijn waarover gesproken werd.
+
+Gebruikersflow:
+
+De gebruiker landt op de pagina en ziet de invoervelden voor de leningcalculator.
+
+De gebruiker vult de waarde van het pand en de gewenste lening in.
+
+De gebruiker klikt op de knop (bijv. "Bereken nu").
+
+Cruciaal: De berekende resultaten (LTV, rente, etc.) verschijnen DIRECT op de pagina, onder de calculator. De gebruiker hoeft hiervoor geen gegevens achter te laten. "Je krijgt indicatieve rente... als je alles hebt ingevuld. Het is niet pas in je mail".
+
+Onder de zojuist verschenen resultaten, verschijnt een nieuwe sectie met "Multiple call-to-actions". Dit is waar de lead-capture plaatsvindt.
+
+Call-to-Action (CTA) Opties voor Prototype B:
+De sectie onder de resultaten moet de volgende, duidelijke opties bieden:
+
+Knop 1: "Email samenvatting ontvangen" (Klik hierop opent een veld voor een e-mailadres).
+
+Knop 2: "E-book downloaden ('Lenen bij Finaforte')" (Idem).
+
+Knop 3: "Indicatieve offerte aanvragen" (Dit is de belangrijkste CTA, die leidt naar een formulier voor naam/e-mail/telefoon).
+
+Knop 4: "Direct afspraak inplannen" (Simuleer een doorverwijzing naar een kalender).
+
+Design & UX Vereisten (Geldt voor beide prototypes):
+
+Visuele Kwaliteit: Het ontwerp moet "gelikt" zijn. Modern, schoon, en professioneel. Denk aan ruime witruimte, duidelijk leesbare fonts (bijv. Poppins, Lato), en een kleurenschema dat past bij een financiële dienstverlener (bijv. donkerblauw, wit, met een oranje of gouden accentkleur voor knoppen).
+
+Interactie: Zorg voor soepele transities. Wanneer secties verschijnen of verdwijnen, gebruik dan subtiele animaties (fade-in/fade-out) in plaats van abrupte veranderingen.
+
+Responsiviteit: Beide prototypes moeten perfect werken op zowel desktop als mobiele apparaten.
+
+
+Sources
+
+
+
+
+
+
