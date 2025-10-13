@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Percent, Coins, Calendar, CheckCircle2 } from "lucide-react";
+import { TrendingUp, Percent, Coins, Calendar } from "lucide-react";
 import type { CalculationResult } from "@shared/schema";
 
 interface CalculationResultsProps {
@@ -82,36 +82,19 @@ export default function CalculationResults({ results, className = "" }: Calculat
           </CardContent>
         </Card>
 
-        <Card className="border-primary/20" data-testid="card-duration">
-          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Looptijd
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground" data-testid="text-duration-value">
-              {results.duration} jaar
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Rentevaste periode
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-primary/20" data-testid="card-repayment">
+        <Card className="border-primary/20" data-testid="card-amortization">
           <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Aflossing
             </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold text-foreground" data-testid="text-repayment-value">
-              {results.repaymentType}
+            <div className="text-3xl font-bold text-foreground" data-testid="text-amortization-value">
+              {results.amortization} jaar
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Type aflossing
+              Looptijd
             </p>
           </CardContent>
         </Card>

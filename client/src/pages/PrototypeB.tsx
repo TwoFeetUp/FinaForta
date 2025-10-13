@@ -17,49 +17,21 @@ export default function PrototypeB() {
     const loanAmount = parseFloat(data.loanAmount);
     const ltv = (loanAmount / propertyValue) * 100;
     
-    const durationRates: Record<string, number> = {
-      "1": 5.15,
-      "2": 5.7,
-      "3": 5.15,
-      "5": 5.05,
-      "7": 5.25,
-      "10": 5.4,
-    };
+    let baseRate = 3.5;
+    if (data.propertyType === "zakelijk") baseRate += 0.5;
+    if (ltv > 80) baseRate += 0.5;
+    if (ltv > 90) baseRate += 0.75;
     
-    let baseRate = durationRates[data.duration] || 5.0;
-    if (data.propertyType === "zakelijk") baseRate += 0.25;
-    if (ltv > 80) baseRate += 0.25;
-    if (ltv > 90) baseRate += 0.5;
-    
-    const duration = parseInt(data.duration);
     const monthlyRate = baseRate / 100 / 12;
-    const numPayments = duration * 12;
-    
-    let monthlyPayment: number;
-    if (data.repaymentType === "zonder") {
-      monthlyPayment = loanAmount * monthlyRate;
-    } else if (data.repaymentType === "50") {
-      const interestOnlyPart = (loanAmount * 0.5) * monthlyRate;
-      const amortizingPart = (loanAmount * 0.5) * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
-                             (Math.pow(1 + monthlyRate, numPayments) - 1);
-      monthlyPayment = interestOnlyPart + amortizingPart;
-    } else {
-      monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
-                       (Math.pow(1 + monthlyRate, numPayments) - 1);
-    }
-
-    const repaymentLabels: Record<string, string> = {
-      "zonder": "Zonder aflossing",
-      "volledig": "Ja, volledig",
-      "50": "Ja, 50%",
-    };
+    const numPayments = 30 * 12;
+    const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                          (Math.pow(1 + monthlyRate, numPayments) - 1);
 
     return {
       ltv,
       interestRate: baseRate,
       monthlyPayment,
-      duration,
-      repaymentType: repaymentLabels[data.repaymentType] || data.repaymentType,
+      amortization: 30,
     };
   };
 

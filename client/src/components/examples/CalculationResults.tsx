@@ -3,10 +3,9 @@ import CalculationResults from "../CalculationResults";
 export default function CalculationResultsExample() {
   const mockResults = {
     ltv: 80,
-    interestRate: 5.4,
+    interestRate: 3.75,
     monthlyPayment: 1842,
-    duration: 10,
-    repaymentType: "Ja, volledig",
+    amortization: 30,
   };
 
   return <CalculationResults results={mockResults} />;
