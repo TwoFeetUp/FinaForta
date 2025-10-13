@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import PrototypeA from "@/pages/PrototypeA";
 import PrototypeB from "@/pages/PrototypeB";
 import PrototypeC from "@/pages/PrototypeC";
+import PrototypeD from "@/pages/PrototypeD";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/prototype-a" component={PrototypeA} />
       <Route path="/prototype-b" component={PrototypeB} />
       <Route path="/prototype-c" component={PrototypeC} />
+      <Route path="/prototype-d" component={PrototypeD} />
       <Route component={NotFound} />
     </Switch>
   );

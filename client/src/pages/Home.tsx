@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Lock, Zap, Heart } from "lucide-react";
+import { ArrowRight, Lock, Zap, Heart, Sparkles } from "lucide-react";
 import GradientText from "@/components/GradientText";
 
 export default function Home() {
@@ -15,32 +15,32 @@ export default function Home() {
             </GradientText>
           </h1>
           <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto mb-2">
-            Test drie verschillende gebruikerservaringen voor onze leningcalculator.
+            Test vier verschillende gebruikerservaringen voor onze leningcalculator.
           </p>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto">
             Kies een variant om te beginnen.
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 max-w-7xl mx-auto">
           <Card className="hover-elevate transition-all" data-testid="card-prototype-a">
             <CardHeader className="space-y-3">
               <div className="rounded-lg bg-primary/10 p-3 w-fit">
                 <Lock className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Prototype A: Gated Content</CardTitle>
+              <CardTitle className="text-2xl">Prototype A: Classic Form</CardTitle>
               <CardDescription className="text-base">
-                Test de hypothese van 'hoge drempel' - gebruikers vullen eerst de calculator in 
-                en moeten vervolgens hun contactgegevens achterlaten om de resultaten te zien.
+                Professionele side-by-side layout met traditionele input fields.
+                Clean en direct met live currency formatting en gated resultaten.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <h4 className="font-medium text-sm text-foreground">Kenmerken:</h4>
                 <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Calculator eerst invullen</li>
-                  <li>• Verplichte lead capture voor resultaten</li>
-                  <li>• Psychologie van commitment</li>
+                  <li>• Traditional text inputs</li>
+                  <li>• Side-by-side layout</li>
+                  <li>• Lead capture before results</li>
                 </ul>
               </div>
               <Link href="/prototype-a">
@@ -57,19 +57,19 @@ export default function Home() {
               <div className="rounded-lg bg-primary/10 p-3 w-fit">
                 <Zap className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Prototype B: Instant Value</CardTitle>
+              <CardTitle className="text-2xl">Prototype B: Visual Selector</CardTitle>
               <CardDescription className="text-base">
-                Test de hypothese van 'directe waarde' - gebruikers zien meteen de resultaten
-                en krijgen daarna verschillende opties om verder te gaan.
+                Visuele wizard interface met grote klikbare tiles en preset buttons.
+                4-stappen flow met progress indicator en instant resultaten.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <h4 className="font-medium text-sm text-foreground">Kenmerken:</h4>
                 <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Directe resultaten zonder barrières</li>
-                  <li>• Meerdere call-to-actions na resultaten</li>
-                  <li>• Vertrouwen door waarde eerst</li>
+                  <li>• Large visual cards & tiles</li>
+                  <li>• Preset amount buttons</li>
+                  <li>• Wizard flow with progress bar</li>
                 </ul>
               </div>
               <Link href="/prototype-b">
@@ -86,24 +86,53 @@ export default function Home() {
               <div className="rounded-lg bg-primary/10 p-3 w-fit">
                 <Heart className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Prototype C: Personal Touch</CardTitle>
+              <CardTitle className="text-2xl">Prototype C: Conversational</CardTitle>
               <CardDescription className="text-base">
-                Test de hypothese van 'persoonlijke connectie' - eerst kennismaken met naam,
-                dan samen de berekening maken met persoonlijke begeleiding.
+                Chat-style conversational flow met interactieve sliders en live LTV feedback.
+                Persoonlijk met naam-gebruik en gradient chat bubbles.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <h4 className="font-medium text-sm text-foreground">Kenmerken:</h4>
                 <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Eerst naam voor persoonlijke aanpak</li>
-                  <li>• Begeleiding door het proces</li>
-                  <li>• Minimale friction (alleen email voor resultaten)</li>
+                  <li>• Chat bubble interface</li>
+                  <li>• Interactive sliders with LTV</li>
+                  <li>• Personal name-based flow</li>
                 </ul>
               </div>
               <Link href="/prototype-c">
                 <Button className="w-full" size="lg" data-testid="button-goto-prototype-c">
                   Test Prototype C
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="hover-elevate transition-all" data-testid="card-prototype-d">
+            <CardHeader className="space-y-3">
+              <div className="rounded-lg bg-primary/10 p-3 w-fit">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">Prototype D: Enhanced UX</CardTitle>
+              <CardDescription className="text-base">
+                Geavanceerde gebruikerservaring met innovatieve input methodes en
+                geoptimaliseerde conversie flow voor maximale gebruikerstevredenheid.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-foreground">Kenmerken:</h4>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li>• Innovative input interface</li>
+                  <li>• Enhanced precision controls</li>
+                  <li>• Premium user experience</li>
+                </ul>
+              </div>
+              <Link href="/prototype-d">
+                <Button className="w-full" size="lg" data-testid="button-goto-prototype-d">
+                  Test Prototype D
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>

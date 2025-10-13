@@ -32,6 +32,8 @@ export default function CalculatorInput({ onCalculate, buttonText = "Bereken nu"
     propertyValue: "",
     loanAmount: "",
     propertyType: "woning",
+    duration: "10",
+    repaymentType: "volledig",
   });
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function CalculatorInput({ onCalculate, buttonText = "Bereken nu"
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.propertyAddress && formData.propertyValue && formData.loanAmount) {
+    if (formData.propertyAddress && formData.propertyValue && formData.loanAmount && formData.duration && formData.repaymentType) {
       onCalculate(formData);
     }
   };
@@ -62,7 +64,28 @@ export default function CalculatorInput({ onCalculate, buttonText = "Bereken nu"
     setFormData(prev => ({ ...prev, [field]: numbers }));
   };
 
-  const isFormValid = formData.propertyAddress && formData.propertyValue && formData.loanAmount;
+  const isFormValid = formData.propertyAddress && formData.propertyValue && formData.loanAmount && formData.duration && formData.repaymentType;
+
+  const getDurationInterestRate = (duration: string) => {
+    const rates: Record<string, number> = {
+      "1": 5.15,
+      "2": 5.7,
+      "3": 5.15,
+      "5": 5.05,
+      "7": 5.25,
+      "10": 5.4,
+    };
+    return rates[duration] || 5.0;
+  };
+
+  const getRepaymentLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      "zonder": "Zonder aflossing",
+      "volledig": "Ja, volledig",
+      "50": "Ja, 50%",
+    };
+    return labels[type] || type;
+  };
 
   return (
     <Card className="w-full" data-testid="card-calculator">
@@ -159,6 +182,69 @@ export default function CalculatorInput({ onCalculate, buttonText = "Bereken nu"
                     <Calculator className="h-4 w-4" />
                     <span>Combinatie</span>
                   </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="duration" className="text-sm font-medium">
+              Gewenste looptijd
+            </Label>
+            <Select
+              value={formData.duration}
+              onValueChange={(value: "1" | "2" | "3" | "5" | "7" | "10") => 
+                setFormData(prev => ({ ...prev, duration: value }))
+              }
+            >
+              <SelectTrigger className="w-full" data-testid="select-duration">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1" data-testid="option-duration-1">
+                  1 jaar - tot en met 5.15% rente (indicatie)
+                </SelectItem>
+                <SelectItem value="2" data-testid="option-duration-2">
+                  2 jaar - tot en met 5.7% rente (indicatie)
+                </SelectItem>
+                <SelectItem value="3" data-testid="option-duration-3">
+                  3 jaar - tot en met 5.15% rente (indicatie)
+                </SelectItem>
+                <SelectItem value="5" data-testid="option-duration-5">
+                  5 jaar - tot en met 5.05% rente (indicatie)
+                </SelectItem>
+                <SelectItem value="7" data-testid="option-duration-7">
+                  7 jaar - tot en met 5.25% rente (indicatie)
+                </SelectItem>
+                <SelectItem value="10" data-testid="option-duration-10">
+                  10 jaar - tot en met 5.4% rente (indicatie)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="repayment" className="text-sm font-medium">
+              Aflossing
+            </Label>
+            <Select
+              value={formData.repaymentType}
+              onValueChange={(value: "zonder" | "volledig" | "50") => 
+                setFormData(prev => ({ ...prev, repaymentType: value }))
+              }
+            >
+              <SelectTrigger className="w-full" data-testid="select-repayment">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="zonder" data-testid="option-repayment-zonder">
+                  Zonder aflossing
+                </SelectItem>
+                <SelectItem value="volledig" data-testid="option-repayment-volledig">
+                  Ja, volledig
+                </SelectItem>
+                <SelectItem value="50" data-testid="option-repayment-50">
+                  Ja, 50%
                 </SelectItem>
               </SelectContent>
             </Select>
