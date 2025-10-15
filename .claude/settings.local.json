@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:mogelijk.nl)"
+      "WebFetch(domain:mogelijk.nl)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_install"
     ],
     "deny": [],
     "ask": []

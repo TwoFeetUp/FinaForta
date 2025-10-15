@@ -46,11 +46,15 @@ export interface CalculatorFormData {
   propertyValue: string;
   loanAmount: string;
   propertyType: "zakelijk" | "woning" | "combinatie";
+  duration: string;
+  repaymentType: string;
 }
 
 export interface CalculationResult {
   ltv: number;
   interestRate: number;
   monthlyPayment: number;
-  amortization: number;
+  duration?: number;
+  amortization?: number;
+  repaymentType?: string;
 }

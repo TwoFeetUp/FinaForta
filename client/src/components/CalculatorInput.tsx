@@ -32,6 +32,8 @@ export default function CalculatorInput({ onCalculate, buttonText = "Bereken nu"
     propertyValue: "",
     loanAmount: "",
     propertyType: "woning",
+    duration: "10",
+    repaymentType: "volledig",
   });
 
   useEffect(() => {
@@ -134,7 +136,7 @@ export default function CalculatorInput({ onCalculate, buttonText = "Bereken nu"
             </Label>
             <Select
               value={formData.propertyType}
-              onValueChange={(value: "zakelijk" | "woning" | "combinatie") => 
+              onValueChange={(value: "zakelijk" | "woning" | "combinatie") =>
                 setFormData(prev => ({ ...prev, propertyType: value }))
               }
             >
@@ -160,6 +162,51 @@ export default function CalculatorInput({ onCalculate, buttonText = "Bereken nu"
                     <span>Combinatie</span>
                   </div>
                 </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="duration" className="text-sm font-medium">
+              Gewenste looptijd <span className="text-orange-600">*</span>
+            </Label>
+            <Select
+              value={formData.duration}
+              onValueChange={(value) =>
+                setFormData(prev => ({ ...prev, duration: value }))
+              }
+            >
+              <SelectTrigger className="w-full" data-testid="select-duration">
+                <SelectValue placeholder="Maak een keuze" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 jaar - tot en met 5.15% rente (indicatie)</SelectItem>
+                <SelectItem value="2">2 jaar - tot en met 5.7% rente (indicatie)</SelectItem>
+                <SelectItem value="3">3 jaar - tot en met 5.15% rente (indicatie)</SelectItem>
+                <SelectItem value="5">5 jaar - tot en met 5.05% rente (indicatie)</SelectItem>
+                <SelectItem value="7">7 jaar - tot en met 5.25% rente (indicatie)</SelectItem>
+                <SelectItem value="10">10 jaar - tot en met 5.4% rente (indicatie)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="repaymentType" className="text-sm font-medium">
+              Aflossing <span className="text-orange-600">*</span>
+            </Label>
+            <Select
+              value={formData.repaymentType}
+              onValueChange={(value) =>
+                setFormData(prev => ({ ...prev, repaymentType: value }))
+              }
+            >
+              <SelectTrigger className="w-full" data-testid="select-repayment">
+                <SelectValue placeholder="Maak een keuze" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="zonder">Zonder aflossing</SelectItem>
+                <SelectItem value="volledig">Ja, volledig</SelectItem>
+                <SelectItem value="50">Ja, 50%</SelectItem>
               </SelectContent>
             </Select>
           </div>

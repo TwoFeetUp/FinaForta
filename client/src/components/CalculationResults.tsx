@@ -85,16 +85,16 @@ export default function CalculationResults({ results, className = "" }: Calculat
         <Card className="border-primary/20" data-testid="card-amortization">
           <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Aflossing
+              {results.duration ? "Looptijd" : "Aflossing"}
             </CardTitle>
             <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-foreground" data-testid="text-amortization-value">
-              {results.amortization} jaar
+              {results.duration ? `${results.duration} jaar` : `${results.amortization} jaar`}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Looptijd
+              {results.repaymentType || "Looptijd"}
             </p>
           </CardContent>
         </Card>

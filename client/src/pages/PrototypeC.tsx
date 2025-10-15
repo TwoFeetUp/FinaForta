@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { User, Mail, Sparkles, ArrowRight, Home as HomeIcon, Building2, Calculator as CalcIcon, TrendingDown, TrendingUp } from "lucide-react";
 import GradientText from "@/components/GradientText";
+import Logo from "@/components/Logo";
 import type { CalculationResult } from "@shared/schema";
 
-type Step = "name" | "address" | "propertyDetails" | "loanAmount" | "email" | "results";
+type Step = "name" | "address" | "propertyDetails" | "loanAmount" | "duration" | "repayment" | "email" | "results";
 
 export default function PrototypeC() {
   const [step, setStep] = useState<Step>("name");
@@ -19,27 +20,57 @@ export default function PrototypeC() {
   const [propertyType, setPropertyType] = useState<"woning" | "zakelijk" | "combinatie">("woning");
   const [propertyValue, setPropertyValue] = useState(500000);
   const [loanAmount, setLoanAmount] = useState(400000);
+  const [duration, setDuration] = useState("10");
+  const [repaymentType, setRepaymentType] = useState("volledig");
   const [userEmail, setUserEmail] = useState("");
   const [results, setResults] = useState<CalculationResult | null>(null);
 
   const calculateResults = (): CalculationResult => {
     const ltv = (loanAmount / propertyValue) * 100;
 
-    let baseRate = 3.5;
-    if (propertyType === "zakelijk") baseRate += 0.5;
-    if (ltv > 80) baseRate += 0.5;
-    if (ltv > 90) baseRate += 0.75;
+    const durationRates: Record<string, number> = {
+      "1": 5.15,
+      "2": 5.7,
+      "3": 5.15,
+      "5": 5.05,
+      "7": 5.25,
+      "10": 5.4,
+    };
 
+    let baseRate = durationRates[duration] || 5.0;
+    if (propertyType === "zakelijk") baseRate += 0.25;
+    if (ltv > 80) baseRate += 0.25;
+    if (ltv > 90) baseRate += 0.5;
+
+    const durationNum = parseInt(duration);
     const monthlyRate = baseRate / 100 / 12;
-    const numPayments = 30 * 12;
-    const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
-                          (Math.pow(1 + monthlyRate, numPayments) - 1);
+    const numPayments = durationNum * 12;
+
+    let monthlyPayment: number;
+    if (repaymentType === "zonder") {
+      monthlyPayment = loanAmount * monthlyRate;
+    } else if (repaymentType === "50") {
+      const interestOnlyPart = (loanAmount * 0.5) * monthlyRate;
+      const amortizingPart = (loanAmount * 0.5) * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+                             (Math.pow(1 + monthlyRate, numPayments) - 1);
+      monthlyPayment = interestOnlyPart + amortizingPart;
+    } else {
+      monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+                       (Math.pow(1 + monthlyRate, numPayments) - 1);
+    }
+
+    const repaymentLabels: Record<string, string> = {
+      "zonder": "Zonder aflossing",
+      "volledig": "Ja, volledig",
+      "50": "Ja, 50%",
+    };
 
     return {
       ltv,
       interestRate: baseRate,
       monthlyPayment,
-      amortization: 30,
+      duration: durationNum,
+      repaymentType: repaymentLabels[repaymentType] || repaymentType,
     };
   };
 
@@ -67,23 +98,25 @@ export default function PrototypeC() {
 
   const currentLTV = (loanAmount / propertyValue) * 100;
 
-  const totalSteps = 6;
+  const totalSteps = 8;
   const currentStepNumber =
     step === "name" ? 1 :
     step === "address" ? 2 :
     step === "propertyDetails" ? 3 :
     step === "loanAmount" ? 4 :
-    step === "email" ? 5 : 6;
+    step === "duration" ? 5 :
+    step === "repayment" ? 6 :
+    step === "email" ? 7 : 8;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:to-slate-900 flex items-center">
       <div className="container max-w-4xl mx-auto px-4 md:px-6 py-8">
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <h1 className="text-2xl md:text-3xl">
-              <GradientText animationSpeed={6}>Finaforte</GradientText>
-            </h1>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Logo />
+          </div>
+          <div className="flex items-center justify-center gap-3">
             <Badge variant="outline" className="text-xs" data-testid="badge-prototype-c">
               Prototype C - Conversational
             </Badge>
@@ -468,14 +501,163 @@ export default function PrototypeC() {
                     ))}
                   </div>
                 </div>
-                <Button onClick={() => setStep("email")} className="w-full h-14 text-lg rounded-2xl shadow-lg" size="lg">
+                <Button onClick={() => setStep("duration")} className="w-full h-14 text-lg rounded-2xl shadow-lg" size="lg">
                   Volgende <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </motion.div>
             </motion.div>
           )}
 
-          {/* Step 5: Email */}
+          {/* Step 5: Duration */}
+          {step === "duration" && (
+            <motion.div
+              key="duration"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-2xl mx-auto space-y-6"
+            >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                  <CalcIcon className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <motion.div
+                    initial={{ scale: 0.95 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="bg-white dark:bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-xl"
+                  >
+                    <p className="text-2xl md:text-3xl font-bold mb-3">Looptijd van de lening</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      <span className="font-medium text-foreground">Wat is uw gewenste looptijd?</span><br />
+                      <span className="text-sm">Kies de periode waarin u de lening wilt vastzetten</span>
+                    </p>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-3">
+                {[
+                  { value: "1", label: "1 jaar", rate: "5.15%" },
+                  { value: "2", label: "2 jaar", rate: "5.7%" },
+                  { value: "3", label: "3 jaar", rate: "5.15%" },
+                  { value: "5", label: "5 jaar", rate: "5.05%" },
+                  { value: "7", label: "7 jaar", rate: "5.25%" },
+                  { value: "10", label: "10 jaar", rate: "5.4%" },
+                ].map((option, index) => (
+                  <motion.button
+                    key={option.value}
+                    type="button"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + index * 0.05 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setDuration(option.value)}
+                    className={`w-full p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                      duration === option.value
+                        ? "border-primary bg-primary/10 shadow-md"
+                        : "border-border hover:border-primary/50 bg-white dark:bg-card"
+                    }`}
+                  >
+                    <div className="text-left">
+                      <p className={`font-bold text-lg ${duration === option.value ? "text-primary" : "text-foreground"}`}>
+                        {option.label}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Tot en met {option.rate} rente (indicatie)
+                      </p>
+                    </div>
+                    {duration === option.value && (
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      </div>
+                    )}
+                  </motion.button>
+                ))}
+                <Button onClick={() => setStep("repayment")} className="w-full h-14 text-lg rounded-2xl shadow-lg mt-6" size="lg">
+                  Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Step 6: Repayment */}
+          {step === "repayment" && (
+            <motion.div
+              key="repayment"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-2xl mx-auto space-y-6"
+            >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center">
+                  <TrendingDown className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <motion.div
+                    initial={{ scale: 0.95 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="bg-white dark:bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-xl"
+                  >
+                    <p className="text-2xl md:text-3xl font-bold mb-3">Aflossingstype</p>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      <span className="font-medium text-foreground">Hoe wilt u aflossen?</span><br />
+                      <span className="text-sm">Kies de manier waarop u uw lening wilt aflossen</span>
+                    </p>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-3">
+                {[
+                  { value: "volledig", label: "Volledig aflossen", description: "Rente + volledige aflossing per maand" },
+                  { value: "50", label: "50% aflossen", description: "Rente + halve aflossing per maand" },
+                  { value: "zonder", label: "Zonder aflossing", description: "Alleen rente betalen per maand" },
+                ].map((option, index) => (
+                  <motion.button
+                    key={option.value}
+                    type="button"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + index * 0.05 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setRepaymentType(option.value)}
+                    className={`w-full p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                      repaymentType === option.value
+                        ? "border-primary bg-primary/10 shadow-md"
+                        : "border-border hover:border-primary/50 bg-white dark:bg-card"
+                    }`}
+                  >
+                    <div className="text-left">
+                      <p className={`font-bold text-lg ${repaymentType === option.value ? "text-primary" : "text-foreground"}`}>
+                        {option.label}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {option.description}
+                      </p>
+                    </div>
+                    {repaymentType === option.value && (
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      </div>
+                    )}
+                  </motion.button>
+                ))}
+                <Button onClick={() => setStep("email")} className="w-full h-14 text-lg rounded-2xl shadow-lg mt-6" size="lg">
+                  Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Step 7: Email */}
           {step === "email" && (
             <motion.div
               key="email"
