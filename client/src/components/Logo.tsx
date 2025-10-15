@@ -11,7 +11,7 @@ export default function Logo({ className = "", linkToHome = true }: LogoProps) {
     <img
       src={logoImage}
       alt="FinaForte Logo"
-      className={`h-12 md:h-16 w-auto ${className}`}
+      className={`h-32 md:h-40 w-auto ${className}`}
     />
   );
 
