@@ -114,7 +114,9 @@ export default function PrototypeC() {
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Logo />
+            <div className="bg-white dark:bg-card rounded-2xl p-4 shadow-lg">
+              <Logo />
+            </div>
           </div>
           <div className="flex items-center justify-center gap-3">
             <Badge variant="outline" className="text-xs" data-testid="badge-prototype-c">

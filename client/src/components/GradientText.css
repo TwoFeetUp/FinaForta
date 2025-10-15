@@ -10,6 +10,7 @@
 .animated-gradient-text {
   position: relative;
   display: inline-block;
+  isolation: isolate;
 }
 
 .animated-gradient-text .gradient-overlay {
@@ -22,6 +23,7 @@
   z-index: -1;
   filter: blur(8px);
   opacity: 0.8;
+  pointer-events: none;
 }
 
 .animated-gradient-text .text-content {

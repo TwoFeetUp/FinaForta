@@ -78,15 +78,13 @@ export default function PrototypeA() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-6xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center gap-8">
             <Logo />
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <Badge variant="outline" className="text-xs" data-testid="badge-prototype-a">
-                  Prototype A
-                </Badge>
-              </div>
+            <div className="space-y-3">
+              <Badge variant="outline" className="text-xs" data-testid="badge-prototype-a">
+                Prototype A
+              </Badge>
               <p className="text-muted-foreground text-sm">
                 Slimme leningcalculator voor uw vastgoedinvestering
               </p>
