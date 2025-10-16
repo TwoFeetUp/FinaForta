@@ -285,11 +285,23 @@ export default function PrototypeB() {
               className="max-w-4xl mx-auto"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold mb-3">Wat is de waarde van het pand en hoeveel wilt u lenen?</h2>
-                <p className="text-lg text-muted-foreground">Vul de bedragen in voor uw berekening</p>
+                <h2 className="text-3xl font-bold mb-3">Vertel ons meer over het pand</h2>
+                <p className="text-lg text-muted-foreground">Vul het adres en de bedragen in voor uw berekening</p>
               </div>
 
               <div className="space-y-8 mb-8">
+                {/* Property Address */}
+                <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
+                  <label className="text-lg font-semibold mb-4 block">Adres van het pand</label>
+                  <Input
+                    type="text"
+                    placeholder="Bijv. Radarweg 29, Amsterdam"
+                    value={formData.propertyAddress}
+                    onChange={(e) => setFormData(prev => ({ ...prev, propertyAddress: e.target.value }))}
+                    className="w-full h-16 text-xl"
+                  />
+                </div>
+
                 {/* Property Value */}
                 <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
                   <label className="text-lg font-semibold mb-4 block">Waarde van het pand</label>
@@ -329,7 +341,7 @@ export default function PrototypeB() {
                   onClick={() => setStep("loanTerms")}
                   size="lg"
                   className="text-lg h-14 px-8"
-                  disabled={!formData.propertyValue || !formData.loanAmount}
+                  disabled={!formData.propertyAddress || !formData.propertyValue || !formData.loanAmount}
                 >
                   Volgende <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
