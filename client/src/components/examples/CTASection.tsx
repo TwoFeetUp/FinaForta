@@ -3,9 +3,8 @@ import CTASection from "../CTASection";
 export default function CTASectionExample() {
   return (
     <CTASection
-      onEmailSubmit={(email) => console.log("Email summary requested:", email)}
-      onEbookDownload={(email) => console.log("E-book download:", email)}
-      onQuoteRequest={(data) => console.log("Quote requested:", data)}
+      onEbookDownload={() => console.log("E-book download requested")}
+      onQuoteRequest={() => console.log("Quote requested")}
       onScheduleAppointment={() => console.log("Schedule appointment clicked")}
     />
   );

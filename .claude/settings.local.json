@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:mogelijk.nl)",
       "mcp__playwright__browser_navigate",
-      "mcp__playwright__browser_install"
+      "mcp__playwright__browser_install",
+      "Bash(npm run build:*)",
+      "Bash(npm run check:*)"
     ],
     "deny": [],
     "ask": []

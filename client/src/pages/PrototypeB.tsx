@@ -5,38 +5,49 @@ import CTASection from "@/components/CTASection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
-import { Building2, Home, Calculator, Clock, Coins, ArrowRight, ArrowLeft } from "lucide-react";
+import { Building2, Home, Calculator, Clock, Coins, Mail, User, Phone, ArrowRight, ArrowLeft, AlertCircle } from "lucide-react";
 import type { CalculatorFormData, CalculationResult } from "@shared/schema";
+import { formatCurrencyInput, formatCurrency, getInterestRate, getMaxLTV } from "@/lib/utils";
+import PropertyTypeSelector from "@/components/PropertyTypeSelector";
+import PropertyUsageSelector from "@/components/PropertyUsageSelector";
+import type { PropertyType } from "@/lib/utils";
 
-type Step = "propertyType" | "amounts" | "loanTerms" | "results";
+type Step = "propertyType" | "propertyDetails" | "loanAmount" | "loanTerms" | "contactInfo" | "results";
 
 const durationOptions = [
-  { value: "1", label: "1 jaar", rate: "5.15%" },
-  { value: "2", label: "2 jaar", rate: "5.7%" },
-  { value: "3", label: "3 jaar", rate: "5.15%" },
-  { value: "5", label: "5 jaar", rate: "5.05%" },
-  { value: "7", label: "7 jaar", rate: "5.25%" },
-  { value: "10", label: "10 jaar", rate: "5.4%" },
-];
+  { value: "1", label: "1 jaar" },
+  { value: "2", label: "2 jaar" },
+  { value: "3", label: "3 jaar" },
+  { value: "5", label: "5 jaar" },
+  { value: "7", label: "7 jaar" },
+  { value: "10", label: "10 jaar" },
+] as const;
 
 const repaymentOptions = [
+  { value: "zonder", label: "Zonder aflossen", description: "Alleen rente betalen" },
   { value: "volledig", label: "Volledig aflossen", description: "Rente + volledige aflossing" },
   { value: "50", label: "50% aflossen", description: "Rente + halve aflossing" },
-  { value: "zonder", label: "Zonder aflossing", description: "Alleen rente betalen" },
 ];
 
 export default function PrototypeB() {
   const [step, setStep] = useState<Step>("propertyType");
+  const [propertyType, setPropertyType] = useState<PropertyType>("kantoor");
   const [formData, setFormData] = useState<CalculatorFormData>({
     propertyAddress: "",
     propertyValue: "",
     loanAmount: "",
-    propertyType: "woning",
+    propertyType: "kantoor",
+    isDutchProperty: "ja",
+    propertyUsage: "eigen_gebruik",
     duration: "10",
     repaymentType: "volledig",
   });
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [userPhone, setUserPhone] = useState("");
   const [results, setResults] = useState<CalculationResult | null>(null);
   const [showCTA, setShowCTA] = useState(false);
   const { toast } = useToast();
@@ -46,19 +57,9 @@ export default function PrototypeB() {
     const loanAmount = parseFloat(data.loanAmount);
     const ltv = (loanAmount / propertyValue) * 100;
 
-    const durationRates: Record<string, number> = {
-      "1": 5.15,
-      "2": 5.7,
-      "3": 5.15,
-      "5": 5.05,
-      "7": 5.25,
-      "10": 5.4,
-    };
-
-    let baseRate = durationRates[data.duration] || 5.0;
-    if (data.propertyType === "zakelijk") baseRate += 0.25;
-    if (ltv > 80) baseRate += 0.25;
-    if (ltv > 90) baseRate += 0.5;
+    // Use interest rate from property type configuration
+    const interestRate = getInterestRate(data.propertyType);
+    const baseRate = interestRate;
 
     const duration = parseInt(data.duration);
     const monthlyRate = baseRate / 100 / 12;
@@ -68,11 +69,13 @@ export default function PrototypeB() {
     if (data.repaymentType === "zonder") {
       monthlyPayment = loanAmount * monthlyRate;
     } else if (data.repaymentType === "50") {
+      // 50% interest-only + 50% annuity
       const interestOnlyPart = (loanAmount * 0.5) * monthlyRate;
       const amortizingPart = (loanAmount * 0.5) * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
                              (Math.pow(1 + monthlyRate, numPayments) - 1);
       monthlyPayment = interestOnlyPart + amortizingPart;
     } else {
+      // "volledig" - full repayment with annuity
       monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
                        (Math.pow(1 + monthlyRate, numPayments) - 1);
     }
@@ -93,32 +96,29 @@ export default function PrototypeB() {
   };
 
   const handleCalculate = () => {
-    if (formData.propertyValue && formData.loanAmount) {
+    if (formData.propertyValue && formData.loanAmount && userName.trim() && userEmail.trim() && userPhone.trim()) {
       const calculatedResults = calculateResults(formData);
       setResults(calculatedResults);
       setShowCTA(true);
+      // Auto-send email summary
+      toast({
+        title: "Samenvatting verstuurd",
+        description: `We hebben de berekening naar ${userEmail} gestuurd.`,
+      });
       setStep("results");
     }
   };
 
-  const handleEmailSubmit = (email: string) => {
-    console.log("Email summary sent to:", email);
-    toast({
-      title: "Samenvatting verstuurd",
-      description: `We hebben de samenvatting naar ${email} gestuurd.`,
-    });
-  };
-
-  const handleEbookDownload = (email: string) => {
-    console.log("E-book download for:", email);
+  const handleEbookDownload = () => {
+    console.log("E-book download for:", userEmail);
     toast({
       title: "E-book gedownload",
       description: "Het e-book 'Lenen bij Finaforte' is naar uw e-mail gestuurd.",
     });
   };
 
-  const handleQuoteRequest = (data: { name: string; email: string; phone: string }) => {
-    console.log("Quote requested:", data);
+  const handleQuoteRequest = () => {
+    console.log("Quote requested:", { name: userName, email: userEmail, phone: userPhone });
     toast({
       title: "Offerte aangevraagd",
       description: "Een adviseur neemt binnen 24 uur contact met u op.",
@@ -133,18 +133,12 @@ export default function PrototypeB() {
     });
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("nl-NL", {
-      style: "currency",
-      currency: "EUR",
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatCurrencyInput = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (!numbers) return "";
-    return new Intl.NumberFormat("nl-NL").format(parseInt(numbers));
+  const handleMaatwerkRequest = () => {
+    console.log("Maatwerk beoordeling aangevraagd");
+    toast({
+      title: "Maatwerk beoordeling aangevraagd",
+      description: "Een adviseur neemt binnen 24 uur contact met u op voor een vrijblijvend gesprek.",
+    });
   };
 
   const handleValueChange = (field: "propertyValue" | "loanAmount", value: string) => {
@@ -152,10 +146,25 @@ export default function PrototypeB() {
     setFormData(prev => ({ ...prev, [field]: numbers }));
   };
 
+  // LTV validation
+  const propertyValue = parseFloat(formData.propertyValue) || 0;
+  const loanAmount = parseFloat(formData.loanAmount) || 0;
+  const currentLTV = propertyValue > 0 ? (loanAmount / propertyValue) * 100 : 0;
+  const maxLTV = getMaxLTV(propertyType);
+  const maxLoanAmount = Math.floor((propertyValue * maxLTV) / 100);
+  const isLTVValid = currentLTV <= maxLTV || loanAmount === 0;
+
+  // Get interest rate for selected property type
+  const indicativeRate = getInterestRate(propertyType);
+
   const stepNumber =
     step === "propertyType" ? 1 :
-    step === "amounts" ? 2 :
-    step === "loanTerms" ? 3 : 4;
+    step === "propertyDetails" ? 2 :
+    step === "loanAmount" ? 3 :
+    step === "loanTerms" ? 4 :
+    step === "contactInfo" ? 5 : 6;
+
+  const totalSteps = 5;
 
   return (
     <div className="min-h-screen bg-background">
@@ -180,14 +189,14 @@ export default function PrototypeB() {
         {step !== "results" && (
           <div className="max-w-3xl mx-auto mb-12">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-muted-foreground">Stap {stepNumber} van 3</span>
-              <span className="text-sm font-medium text-primary">{Math.round((stepNumber / 3) * 100)}%</span>
+              <span className="text-sm font-medium text-muted-foreground">Stap {stepNumber} van {totalSteps}</span>
+              <span className="text-sm font-medium text-primary">{Math.round((stepNumber / totalSteps) * 100)}%</span>
             </div>
             <div className="relative h-3 bg-muted rounded-full overflow-hidden">
               <motion.div
                 className="absolute left-0 top-0 h-full bg-primary"
                 initial={{ width: 0 }}
-                animate={{ width: `${(stepNumber / 3) * 100}%` }}
+                animate={{ width: `${(stepNumber / totalSteps) * 100}%` }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
               />
             </div>
@@ -195,7 +204,7 @@ export default function PrototypeB() {
         )}
 
         <AnimatePresence mode="wait">
-          {/* Step 1: Property Type */}
+          {/* Step 1: Property Type Selection */}
           {step === "propertyType" && (
             <motion.div
               key="propertyType"
@@ -205,151 +214,229 @@ export default function PrototypeB() {
               transition={{ duration: 0.4 }}
               className="max-w-4xl mx-auto"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold mb-3">Wat voor type pand betreft het?</h2>
-                <p className="text-lg text-muted-foreground">Kies het type vastgoed waarvoor u een lening zoekt</p>
-              </div>
+              <form onSubmit={(e) => { e.preventDefault(); setStep("propertyDetails"); }}>
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold mb-3">Wat voor type pand betreft het?</h2>
+                  <p className="text-lg text-muted-foreground">Selecteer het type vastgoed en het gebruiksdoel</p>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.03, y: -4 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setFormData(prev => ({ ...prev, propertyType: "woning" }))}
-                  className={`p-8 rounded-2xl border-2 transition-all ${
-                    formData.propertyType === "woning"
-                      ? "border-primary bg-primary/10 shadow-xl"
-                      : "border-border hover:border-primary/50 bg-card"
-                  }`}
-                >
-                  <Home className={`h-16 w-16 mx-auto mb-4 ${formData.propertyType === "woning" ? "text-primary" : "text-muted-foreground"}`} />
-                  <h3 className={`text-2xl font-bold mb-2 ${formData.propertyType === "woning" ? "text-primary" : "text-foreground"}`}>
-                    Woning
-                  </h3>
-                  <p className="text-sm text-muted-foreground">Hypotheek voor particulieren</p>
-                </motion.button>
+                <div className="space-y-8 mb-8">
+                {/* Property Type Dropdown */}
+                <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
+                  <label className="text-lg font-semibold mb-4 block">Type vastgoed</label>
+                  <PropertyTypeSelector
+                    value={propertyType}
+                    onChange={(newType) => {
+                      setPropertyType(newType);
+                      setFormData(prev => ({ ...prev, propertyType: newType }));
+                    }}
+                  />
+                </div>
 
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.03, y: -4 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setFormData(prev => ({ ...prev, propertyType: "zakelijk" }))}
-                  className={`p-8 rounded-2xl border-2 transition-all ${
-                    formData.propertyType === "zakelijk"
-                      ? "border-primary bg-primary/10 shadow-xl"
-                      : "border-border hover:border-primary/50 bg-card"
-                  }`}
-                >
-                  <Building2 className={`h-16 w-16 mx-auto mb-4 ${formData.propertyType === "zakelijk" ? "text-primary" : "text-muted-foreground"}`} />
-                  <h3 className={`text-2xl font-bold mb-2 ${formData.propertyType === "zakelijk" ? "text-primary" : "text-foreground"}`}>
-                    Zakelijk
-                  </h3>
-                  <p className="text-sm text-muted-foreground">Bedrijfspand of kantoor</p>
-                </motion.button>
+                {/* Dutch Property */}
+                <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
+                  <label className="text-lg font-semibold mb-4 block">Nederlands vastgoed?</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setFormData(prev => ({ ...prev, isDutchProperty: "ja" }))}
+                      className={`p-6 rounded-xl border-2 transition-all ${
+                        formData.isDutchProperty === "ja"
+                          ? "border-primary bg-primary/10 shadow-md"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <p className={`font-bold text-xl ${formData.isDutchProperty === "ja" ? "text-primary" : "text-foreground"}`}>
+                        Ja
+                      </p>
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setFormData(prev => ({ ...prev, isDutchProperty: "nee" }))}
+                      className={`p-6 rounded-xl border-2 transition-all ${
+                        formData.isDutchProperty === "nee"
+                          ? "border-primary bg-primary/10 shadow-md"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <p className={`font-bold text-xl ${formData.isDutchProperty === "nee" ? "text-primary" : "text-foreground"}`}>
+                        Nee
+                      </p>
+                    </motion.button>
+                  </div>
+                </div>
 
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.03, y: -4 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setFormData(prev => ({ ...prev, propertyType: "combinatie" }))}
-                  className={`p-8 rounded-2xl border-2 transition-all ${
-                    formData.propertyType === "combinatie"
-                      ? "border-primary bg-primary/10 shadow-xl"
-                      : "border-border hover:border-primary/50 bg-card"
-                  }`}
-                >
-                  <Calculator className={`h-16 w-16 mx-auto mb-4 ${formData.propertyType === "combinatie" ? "text-primary" : "text-muted-foreground"}`} />
-                  <h3 className={`text-2xl font-bold mb-2 ${formData.propertyType === "combinatie" ? "text-primary" : "text-foreground"}`}>
-                    Combinatie
-                  </h3>
-                  <p className="text-sm text-muted-foreground">Wonen en werken gecombineerd</p>
-                </motion.button>
-              </div>
+                {/* Property Usage */}
+                <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
+                  <label className="text-lg font-semibold mb-4 block">Wat is uw gebruiksdoel?</label>
+                  <PropertyUsageSelector
+                    value={formData.propertyUsage}
+                    onChange={(newUsage) => setFormData(prev => ({ ...prev, propertyUsage: newUsage }))}
+                  />
+                </div>
+                </div>
 
-              <div className="flex justify-end">
-                <Button onClick={() => setStep("amounts")} size="lg" className="text-lg h-14 px-8">
-                  Volgende <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="text-lg h-14 px-8"
+                  >
+                    Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </form>
             </motion.div>
           )}
 
-          {/* Step 2: Amounts */}
-          {step === "amounts" && (
+          {/* Step 2: Property Details (Address & Value) */}
+          {step === "propertyDetails" && (
             <motion.div
-              key="amounts"
+              key="propertyDetails"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
               transition={{ duration: 0.4 }}
               className="max-w-4xl mx-auto"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold mb-3">Vertel ons meer over het pand</h2>
-                <p className="text-lg text-muted-foreground">Vul het adres en de bedragen in voor uw berekening</p>
-              </div>
-
-              <div className="space-y-8 mb-8">
-                {/* Property Address */}
-                <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
-                  <label className="text-lg font-semibold mb-4 block">Adres van het pand</label>
-                  <Input
-                    type="text"
-                    placeholder="Bijv. Radarweg 29, Amsterdam"
-                    value={formData.propertyAddress}
-                    onChange={(e) => setFormData(prev => ({ ...prev, propertyAddress: e.target.value }))}
-                    className="w-full h-16 text-xl"
-                  />
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (formData.propertyAddress && formData.propertyValue) {
+                  setStep("loanAmount");
+                }
+              }}>
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold mb-3">Waar bevindt het pand zich?</h2>
+                  <p className="text-lg text-muted-foreground">Vul het adres en de waarde van het pand in</p>
                 </div>
 
-                {/* Property Value */}
-                <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
-                  <label className="text-lg font-semibold mb-4 block">Waarde van het pand</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">€</span>
+                <div className="space-y-8 mb-8">
+                  {/* Property Address */}
+                  <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
+                    <label className="text-lg font-semibold mb-4 block">Adres van het pand *</label>
                     <Input
                       type="text"
-                      placeholder="500.000"
-                      value={formatCurrencyInput(formData.propertyValue)}
-                      onChange={(e) => handleValueChange("propertyValue", e.target.value)}
-                      className="w-full pl-10 h-16 text-2xl font-semibold text-center"
+                      placeholder="Bijv. Radarweg 29, Amsterdam"
+                      value={formData.propertyAddress}
+                      onChange={(e) => setFormData(prev => ({ ...prev, propertyAddress: e.target.value }))}
+                      className="w-full h-16 text-xl"
+                      required
                     />
+                  </div>
+
+                  {/* Property Value */}
+                  <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
+                    <label className="text-lg font-semibold mb-4 block">Waarde van het pand *</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">€</span>
+                      <Input
+                        type="text"
+                        placeholder="500.000"
+                        value={formatCurrencyInput(formData.propertyValue)}
+                        onChange={(e) => handleValueChange("propertyValue", e.target.value)}
+                        className="w-full pl-10 h-16 text-2xl font-semibold text-center"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Loan Amount */}
-                <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
-                  <label className="text-lg font-semibold mb-4 block">Gewenste leningshoogte</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">€</span>
-                    <Input
-                      type="text"
-                      placeholder="400.000"
-                      value={formatCurrencyInput(formData.loanAmount)}
-                      onChange={(e) => handleValueChange("loanAmount", e.target.value)}
-                      className="w-full pl-10 h-16 text-2xl font-semibold text-center"
-                    />
-                  </div>
+                <div className="flex justify-between">
+                  <Button type="button" onClick={() => setStep("propertyType")} size="lg" variant="outline" className="text-lg h-14 px-8">
+                    <ArrowLeft className="mr-2 h-5 w-5" /> Terug
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="text-lg h-14 px-8"
+                    disabled={!formData.propertyAddress || !formData.propertyValue}
+                  >
+                    Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
                 </div>
-              </div>
-
-              <div className="flex justify-between">
-                <Button onClick={() => setStep("propertyType")} size="lg" variant="outline" className="text-lg h-14 px-8">
-                  <ArrowLeft className="mr-2 h-5 w-5" /> Terug
-                </Button>
-                <Button
-                  onClick={() => setStep("loanTerms")}
-                  size="lg"
-                  className="text-lg h-14 px-8"
-                  disabled={!formData.propertyAddress || !formData.propertyValue || !formData.loanAmount}
-                >
-                  Volgende <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
+              </form>
             </motion.div>
           )}
 
-          {/* Step 3: Loan Terms */}
+          {/* Step 3: Loan Amount */}
+          {step === "loanAmount" && (
+            <motion.div
+              key="loanAmount"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-4xl mx-auto"
+            >
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (formData.loanAmount && isLTVValid) {
+                  setStep("loanTerms");
+                }
+              }}>
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold mb-3">Hoeveel wilt u lenen?</h2>
+                  <p className="text-lg text-muted-foreground">Vul het gewenste leningbedrag in</p>
+                </div>
+
+                <div className="space-y-8 mb-8">
+                  {/* Loan Amount */}
+                  <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
+                    <label className="text-lg font-semibold mb-4 block">Gewenste leningshoogte *</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">€</span>
+                      <Input
+                        type="text"
+                        placeholder="400.000"
+                        value={formatCurrencyInput(formData.loanAmount)}
+                        onChange={(e) => handleValueChange("loanAmount", e.target.value)}
+                        className={`w-full pl-10 h-16 text-2xl font-semibold text-center ${!isLTVValid ? "border-red-500" : ""}`}
+                        required
+                      />
+                    </div>
+
+                    {/* LTV Validation Error */}
+                    {!isLTVValid && loanAmount > 0 && propertyValue > 0 && (
+                      <Alert variant="destructive" className="mt-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Dit bedrag is niet mogelijk met de gekozen vastgoedtype. De maximale LTV is {maxLTV}%
+                          (max. {formatCurrency(maxLoanAmount)}). Verlaag het leningbedrag of verhoog de pandwaarde.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* LTV Info when valid */}
+                    {isLTVValid && loanAmount > 0 && propertyValue > 0 && (
+                      <p className="text-sm text-muted-foreground mt-2 text-center">
+                        LTV: {currentLTV.toFixed(1)}% van {maxLTV}% toegestaan
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between">
+                  <Button type="button" onClick={() => setStep("propertyDetails")} size="lg" variant="outline" className="text-lg h-14 px-8">
+                    <ArrowLeft className="mr-2 h-5 w-5" /> Terug
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="text-lg h-14 px-8"
+                    disabled={!formData.loanAmount || !isLTVValid}
+                  >
+                    Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {/* Step 4: Loan Terms */}
           {step === "loanTerms" && (
             <motion.div
               key="loanTerms"
@@ -359,12 +446,13 @@ export default function PrototypeB() {
               transition={{ duration: 0.4 }}
               className="max-w-4xl mx-auto"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold mb-3">Kies uw gewenste looptijd en aflossing</h2>
-                <p className="text-lg text-muted-foreground">Selecteer de voorwaarden die bij u passen</p>
-              </div>
+              <form onSubmit={(e) => { e.preventDefault(); setStep("contactInfo"); }}>
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold mb-3">Kies uw gewenste looptijd en aflossingstype</h2>
+                  <p className="text-lg text-muted-foreground">Selecteer de voorwaarden die bij u passen</p>
+                </div>
 
-              <div className="space-y-8 mb-8">
+                <div className="space-y-8 mb-8">
                 {/* Duration */}
                 <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
                   <div className="flex items-center gap-3 mb-6">
@@ -389,18 +477,18 @@ export default function PrototypeB() {
                           {option.label}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          tot {option.rate} rente
+                          {indicativeRate}% rente (indicatie)
                         </p>
                       </motion.button>
                     ))}
                   </div>
                 </div>
 
-                {/* Repayment Type */}
+                {/* Repayment Percentage */}
                 <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
                   <div className="flex items-center gap-3 mb-6">
                     <Coins className="h-6 w-6 text-primary" />
-                    <label className="text-xl font-semibold">Aflossingstype</label>
+                    <label className="text-xl font-semibold">Aflossing</label>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {repaymentOptions.map((option) => (
@@ -420,26 +508,123 @@ export default function PrototypeB() {
                           {option.label}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {option.description}
+                          {option.description} (annuïtair)
                         </p>
                       </motion.button>
                     ))}
                   </div>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    Annuïtair = Gelijke maandlasten gedurende de looptijd
+                  </p>
                 </div>
-              </div>
+                </div>
 
-              <div className="flex justify-between">
-                <Button onClick={() => setStep("amounts")} size="lg" variant="outline" className="text-lg h-14 px-8">
-                  <ArrowLeft className="mr-2 h-5 w-5" /> Terug
-                </Button>
-                <Button onClick={handleCalculate} size="lg" className="text-lg h-14 px-8">
-                  Bereken resultaten <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
+                <div className="flex justify-between">
+                  <Button type="button" onClick={() => setStep("loanAmount")} size="lg" variant="outline" className="text-lg h-14 px-8">
+                    <ArrowLeft className="mr-2 h-5 w-5" /> Terug
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="text-lg h-14 px-8"
+                  >
+                    Volgende <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </form>
             </motion.div>
           )}
 
-          {/* Step 4: Results */}
+          {/* Step 5: Contact Info */}
+          {step === "contactInfo" && (
+            <motion.div
+              key="contactInfo"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-4xl mx-auto"
+            >
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (userName.trim() && userEmail.trim() && userPhone.trim()) {
+                  handleCalculate();
+                }
+              }}>
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold mb-3">Bijna klaar!</h2>
+                  <p className="text-lg text-muted-foreground">Vul uw contactgegevens in om de berekening te ontvangen</p>
+                </div>
+
+                <div className="space-y-8 mb-8">
+                  {/* Contact Info Section */}
+                  <div className="bg-card border-2 rounded-2xl p-8 shadow-lg">
+                    <div className="mb-6">
+                      <h3 className="text-xl font-semibold mb-2">Contactgegevens</h3>
+                      <p className="text-muted-foreground">We sturen de berekening direct naar uw e-mailadres</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Name Field */}
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                        <Input
+                          type="text"
+                          placeholder="Uw naam *"
+                          value={userName}
+                          onChange={(e) => setUserName(e.target.value)}
+                          className="pl-12 h-14 text-lg rounded-xl border-2"
+                          required
+                        />
+                      </div>
+
+                      {/* Email Field */}
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                        <Input
+                          type="email"
+                          placeholder="uw.email@bedrijf.nl *"
+                          value={userEmail}
+                          onChange={(e) => setUserEmail(e.target.value)}
+                          className="pl-12 h-14 text-lg rounded-xl border-2"
+                          required
+                        />
+                      </div>
+
+                      {/* Phone Field */}
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                        <Input
+                          type="tel"
+                          placeholder="+31 (0)6 12 34 56 78 *"
+                          value={userPhone}
+                          onChange={(e) => setUserPhone(e.target.value)}
+                          className="pl-12 h-14 text-lg rounded-xl border-2"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between">
+                  <Button type="button" onClick={() => setStep("loanTerms")} size="lg" variant="outline" className="text-lg h-14 px-8">
+                    <ArrowLeft className="mr-2 h-5 w-5" /> Terug
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="text-lg h-14 px-8"
+                    disabled={!userName.trim() || !userEmail.trim() || !userPhone.trim()}
+                  >
+                    Berekening starten <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {/* Step 3: Results */}
           {step === "results" && results && (
             <motion.div
               key="results"
@@ -448,7 +633,15 @@ export default function PrototypeB() {
               transition={{ duration: 0.4 }}
               className="space-y-12 max-w-4xl mx-auto"
             >
-              <CalculationResults results={results} />
+              <CalculationResults
+                results={results}
+                calculatorData={{
+                  propertyValue: parseFloat(formData.propertyValue),
+                  loanAmount: parseFloat(formData.loanAmount),
+                  duration: parseInt(formData.duration),
+                }}
+                onRequestMaatwerk={handleMaatwerkRequest}
+              />
 
               {showCTA && (
                 <motion.div
@@ -457,7 +650,6 @@ export default function PrototypeB() {
                   transition={{ duration: 0.4, delay: 0.2 }}
                 >
                   <CTASection
-                    onEmailSubmit={handleEmailSubmit}
                     onEbookDownload={handleEbookDownload}
                     onQuoteRequest={handleQuoteRequest}
                     onScheduleAppointment={handleScheduleAppointment}
@@ -471,6 +663,9 @@ export default function PrototypeB() {
                     setStep("propertyType");
                     setResults(null);
                     setShowCTA(false);
+                    setUserName("");
+                    setUserEmail("");
+                    setUserPhone("");
                   }}
                   size="lg"
                   variant="outline"

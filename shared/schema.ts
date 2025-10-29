@@ -41,11 +41,30 @@ export const insertLeadSchema = createInsertSchema(leads).omit({
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type Lead = typeof leads.$inferSelect;
 
+export type PropertyType =
+  | "bedrijfspand"
+  | "bedrijfspand_met_bedrijfswoning"
+  | "kantoor"
+  | "woning_voor_verhuur"
+  | "transformatie"
+  | "winkel"
+  | "woon_winkelpand"
+  | "horeca"
+  | "recreatiewoning_voor_verhuur"
+  | "supermarkt"
+  | "zorgvastgoed"
+  | "agrarisch"
+  | "verbouwing_woning"
+  | "verbouwing_bedrijfspand"
+  | "verduurzaming";
+
 export interface CalculatorFormData {
   propertyAddress: string;
   propertyValue: string;
   loanAmount: string;
-  propertyType: "zakelijk" | "woning" | "combinatie";
+  propertyType: PropertyType;
+  isDutchProperty: "ja" | "nee";
+  propertyUsage: "eigen_gebruik" | "verhuur" | "combinatie" | "verkoop";
   duration: string;
   repaymentType: string;
 }

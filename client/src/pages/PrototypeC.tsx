@@ -4,12 +4,18 @@ import CalculationResults from "@/components/CalculationResults";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { User, Mail, Sparkles, ArrowRight, Home as HomeIcon, Building2, Calculator as CalcIcon, TrendingDown, TrendingUp } from "lucide-react";
+import { User, Mail, Sparkles, ArrowRight, Home as HomeIcon, Building2, Calculator as CalcIcon, TrendingDown, TrendingUp, Info, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import GradientText from "@/components/GradientText";
 import Logo from "@/components/Logo";
 import type { CalculationResult } from "@shared/schema";
+import { formatCurrency, getInterestRate, getMaxLTV, type PropertyType } from "@/lib/utils";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import PropertyTypeSelector from "@/components/PropertyTypeSelector";
+import PropertyUsageSelector from "@/components/PropertyUsageSelector";
 
 type Step = "name" | "address" | "propertyDetails" | "loanAmount" | "duration" | "repayment" | "email" | "results";
 
@@ -17,30 +23,22 @@ export default function PrototypeC() {
   const [step, setStep] = useState<Step>("name");
   const [userName, setUserName] = useState("");
   const [propertyAddress, setPropertyAddress] = useState("");
-  const [propertyType, setPropertyType] = useState<"woning" | "zakelijk" | "combinatie">("woning");
+  const [propertyType, setPropertyType] = useState<PropertyType>("kantoor");
+  const [isDutchProperty, setIsDutchProperty] = useState<"ja" | "nee">("ja");
+  const [propertyUsage, setPropertyUsage] = useState<"eigen_gebruik" | "verhuur" | "combinatie" | "verkoop">("eigen_gebruik");
   const [propertyValue, setPropertyValue] = useState(500000);
   const [loanAmount, setLoanAmount] = useState(400000);
   const [duration, setDuration] = useState("10");
   const [repaymentType, setRepaymentType] = useState("volledig");
   const [userEmail, setUserEmail] = useState("");
   const [results, setResults] = useState<CalculationResult | null>(null);
+  const { toast } = useToast();
 
   const calculateResults = (): CalculationResult => {
     const ltv = (loanAmount / propertyValue) * 100;
 
-    const durationRates: Record<string, number> = {
-      "1": 5.15,
-      "2": 5.7,
-      "3": 5.15,
-      "5": 5.05,
-      "7": 5.25,
-      "10": 5.4,
-    };
-
-    let baseRate = durationRates[duration] || 5.0;
-    if (propertyType === "zakelijk") baseRate += 0.25;
-    if (ltv > 80) baseRate += 0.25;
-    if (ltv > 90) baseRate += 0.5;
+    // Use interest rate from property type configuration
+    const baseRate = getInterestRate(propertyType);
 
     const durationNum = parseInt(duration);
     const monthlyRate = baseRate / 100 / 12;
@@ -50,11 +48,13 @@ export default function PrototypeC() {
     if (repaymentType === "zonder") {
       monthlyPayment = loanAmount * monthlyRate;
     } else if (repaymentType === "50") {
+      // 50% interest-only + 50% annuity
       const interestOnlyPart = (loanAmount * 0.5) * monthlyRate;
       const amortizingPart = (loanAmount * 0.5) * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
                              (Math.pow(1 + monthlyRate, numPayments) - 1);
       monthlyPayment = interestOnlyPart + amortizingPart;
     } else {
+      // "volledig" - full repayment with annuity
       monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
                        (Math.pow(1 + monthlyRate, numPayments) - 1);
     }
@@ -74,14 +74,6 @@ export default function PrototypeC() {
     };
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("nl-NL", {
-      style: "currency",
-      currency: "EUR",
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   const getLTVColor = (ltv: number) => {
     if (ltv <= 70) return "text-green-600 dark:text-green-400";
     if (ltv <= 80) return "text-blue-600 dark:text-blue-400";
@@ -96,7 +88,21 @@ export default function PrototypeC() {
     return "Hoog";
   };
 
-  const currentLTV = (loanAmount / propertyValue) * 100;
+  const currentLTV = propertyValue > 0 ? (loanAmount / propertyValue) * 100 : 0;
+  const maxLTV = getMaxLTV(propertyType);
+  const maxLoanAmount = Math.floor((propertyValue * maxLTV) / 100);
+  const isLTVValid = currentLTV <= maxLTV || loanAmount === 0;
+
+  // Get interest rate for selected property type
+  const indicativeRate = getInterestRate(propertyType);
+
+  const handleMaatwerkRequest = () => {
+    console.log("Maatwerk beoordeling aangevraagd");
+    toast({
+      title: "Maatwerk beoordeling aangevraagd",
+      description: "Een adviseur neemt binnen 24 uur contact met u op voor een vrijblijvend gesprek.",
+    });
+  };
 
   const totalSteps = 8;
   const currentStepNumber =
@@ -109,8 +115,9 @@ export default function PrototypeC() {
     step === "email" ? 7 : 8;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:to-slate-900 flex items-center">
-      <div className="container max-w-4xl mx-auto px-4 md:px-6 py-8">
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:to-slate-900 flex items-center">
+        <div className="container max-w-4xl mx-auto px-4 md:px-6 py-8">
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -189,6 +196,7 @@ export default function PrototypeC() {
                       onChange={(e) => setUserName(e.target.value)}
                       className="pl-12 h-14 text-lg rounded-2xl border-2 bg-white dark:bg-background shadow-lg"
                       autoFocus
+                      required
                     />
                   </div>
                   <Button type="submit" className="w-full h-14 text-lg rounded-2xl shadow-lg" size="lg" disabled={!userName.trim()}>
@@ -239,6 +247,7 @@ export default function PrototypeC() {
                       onChange={(e) => setPropertyAddress(e.target.value)}
                       className="pl-12 h-14 text-lg rounded-2xl border-2 bg-white dark:bg-background shadow-lg"
                       autoFocus
+                      required
                     />
                   </div>
                   <Button type="submit" className="w-full h-14 text-lg rounded-2xl shadow-lg" size="lg" disabled={!propertyAddress.trim()}>
@@ -280,69 +289,82 @@ export default function PrototypeC() {
 
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-6">
 
-                {/* Property Type Icons */}
+                {/* Property Type Selector */}
                 <div className="bg-white dark:bg-card border-2 rounded-3xl p-6 shadow-xl space-y-4">
-                  <label className="text-sm font-semibold text-foreground">Type pand</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setPropertyType("woning")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                        propertyType === "woning"
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <HomeIcon className={`h-8 w-8 ${propertyType === "woning" ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className={`text-sm font-medium ${propertyType === "woning" ? "text-primary" : "text-muted-foreground"}`}>
-                        Woning
-                      </span>
-                    </motion.button>
+                  <label className="text-sm font-semibold text-foreground">
+                    Type pand
+                  </label>
+                  <PropertyTypeSelector
+                    value={propertyType}
+                    onChange={setPropertyType}
+                  />
+                </div>
 
+                {/* Dutch Property */}
+                <div className="bg-white dark:bg-card border-2 rounded-3xl p-6 shadow-xl">
+                  <label className="text-sm font-semibold text-foreground mb-4 block">
+                    Nederlands vastgoed?
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
                     <motion.button
                       type="button"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setPropertyType("zakelijk")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                        propertyType === "zakelijk"
-                          ? "border-primary bg-primary/10"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setIsDutchProperty("ja")}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        isDutchProperty === "ja"
+                          ? "border-primary bg-primary/10 shadow-md"
                           : "border-border hover:border-primary/50"
                       }`}
                     >
-                      <Building2 className={`h-8 w-8 ${propertyType === "zakelijk" ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className={`text-sm font-medium ${propertyType === "zakelijk" ? "text-primary" : "text-muted-foreground"}`}>
-                        Zakelijk
-                      </span>
+                      <p className={`font-bold text-lg ${isDutchProperty === "ja" ? "text-primary" : "text-foreground"}`}>
+                        Ja
+                      </p>
                     </motion.button>
-
                     <motion.button
                       type="button"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setPropertyType("combinatie")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                        propertyType === "combinatie"
-                          ? "border-primary bg-primary/10"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setIsDutchProperty("nee")}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        isDutchProperty === "nee"
+                          ? "border-primary bg-primary/10 shadow-md"
                           : "border-border hover:border-primary/50"
                       }`}
                     >
-                      <div className="relative">
-                        <HomeIcon className={`h-8 w-8 ${propertyType === "combinatie" ? "text-primary" : "text-muted-foreground"}`} />
-                        <Building2 className={`h-4 w-4 absolute -bottom-1 -right-1 ${propertyType === "combinatie" ? "text-primary" : "text-muted-foreground"}`} />
-                      </div>
-                      <span className={`text-sm font-medium ${propertyType === "combinatie" ? "text-primary" : "text-muted-foreground"}`}>
-                        Combinatie
-                      </span>
+                      <p className={`font-bold text-lg ${isDutchProperty === "nee" ? "text-primary" : "text-foreground"}`}>
+                        Nee
+                      </p>
                     </motion.button>
                   </div>
                 </div>
 
+                {/* Property Usage */}
+                <div className="bg-white dark:bg-card border-2 rounded-3xl p-6 shadow-xl">
+                  <label className="text-sm font-semibold text-foreground mb-4 block">
+                    Wat is uw gebruiksdoel?
+                  </label>
+                  <PropertyUsageSelector
+                    value={propertyUsage}
+                    onChange={setPropertyUsage}
+                  />
+                </div>
+
                 {/* Property Value Slider */}
                 <div className="bg-white dark:bg-card border-2 rounded-3xl p-8 shadow-xl">
-                  <label className="text-sm font-semibold text-foreground block mb-4">Waarde van het pand</label>
+                  <div className="flex items-center gap-2 mb-4">
+                    <label className="text-sm font-semibold text-foreground">Waarde van het pand</label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="inline-flex items-center justify-center p-0.5 rounded-full hover:bg-primary/10 transition-colors">
+                          <Info className="h-4 w-4 text-primary/60 hover:text-primary" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        Sleep de slider naar rechts om het gewenste investeringsbedrag in te stellen
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <motion.div
                     key={propertyValue}
                     initial={{ scale: 1.05 }}
@@ -461,7 +483,7 @@ export default function PrototypeC() {
                       </div>
                       <div className="text-right">
                         <p className={`text-2xl font-bold ${getLTVColor(currentLTV)}`}>
-                          {currentLTV.toFixed(1)}%
+                          {currentLTV.toFixed(1).replace('.', ',')}%
                         </p>
                         <p className={`text-xs font-medium ${getLTVColor(currentLTV)}`}>
                           {getLTVLabel(currentLTV)}
@@ -471,6 +493,19 @@ export default function PrototypeC() {
                   </motion.div>
 
                   <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <label className="text-xs font-medium text-muted-foreground">Slider</label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="inline-flex items-center justify-center p-0.5 rounded-full hover:bg-primary/10 transition-colors">
+                            <Info className="h-3.5 w-3.5 text-primary/60 hover:text-primary" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          Sleep de slider naar rechts om het gewenste investeringsbedrag in te stellen
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <Slider
                       value={[loanAmount]}
                       onValueChange={([value]) => setLoanAmount(value)}
@@ -502,8 +537,24 @@ export default function PrototypeC() {
                       </Button>
                     ))}
                   </div>
+
+                  {/* LTV Validation Error */}
+                  {!isLTVValid && loanAmount > 0 && propertyValue > 0 && (
+                    <Alert variant="destructive" className="mt-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Dit bedrag is niet mogelijk met de gekozen vastgoedtype. De maximale LTV is {maxLTV}%
+                        (max. {formatCurrency(maxLoanAmount)}). Verlaag het leningbedrag.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
-                <Button onClick={() => setStep("duration")} className="w-full h-14 text-lg rounded-2xl shadow-lg" size="lg">
+                <Button
+                  onClick={() => setStep("duration")}
+                  className="w-full h-14 text-lg rounded-2xl shadow-lg"
+                  size="lg"
+                  disabled={!isLTVValid}
+                >
                   Volgende <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </motion.div>
@@ -542,12 +593,12 @@ export default function PrototypeC() {
 
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-3">
                 {[
-                  { value: "1", label: "1 jaar", rate: "5.15%" },
-                  { value: "2", label: "2 jaar", rate: "5.7%" },
-                  { value: "3", label: "3 jaar", rate: "5.15%" },
-                  { value: "5", label: "5 jaar", rate: "5.05%" },
-                  { value: "7", label: "7 jaar", rate: "5.25%" },
-                  { value: "10", label: "10 jaar", rate: "5.4%" },
+                  { value: "1", label: "1 jaar" },
+                  { value: "2", label: "2 jaar" },
+                  { value: "3", label: "3 jaar" },
+                  { value: "5", label: "5 jaar" },
+                  { value: "7", label: "7 jaar" },
+                  { value: "10", label: "10 jaar" },
                 ].map((option, index) => (
                   <motion.button
                     key={option.value}
@@ -569,7 +620,7 @@ export default function PrototypeC() {
                         {option.label}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Tot en met {option.rate} rente (indicatie)
+                        {indicativeRate}% rente (indicatie)
                       </p>
                     </div>
                     {duration === option.value && (
@@ -607,10 +658,10 @@ export default function PrototypeC() {
                     transition={{ delay: 0.3 }}
                     className="bg-white dark:bg-card border-2 rounded-3xl rounded-tl-sm p-6 shadow-xl"
                   >
-                    <p className="text-2xl md:text-3xl font-bold mb-3">Aflossingstype</p>
+                    <p className="text-2xl md:text-3xl font-bold mb-3">Aflossing</p>
                     <p className="text-muted-foreground text-base md:text-lg">
                       <span className="font-medium text-foreground">Hoe wilt u aflossen?</span><br />
-                      <span className="text-sm">Kies de manier waarop u uw lening wilt aflossen</span>
+                      <span className="text-sm">Aflossing is altijd annuïtair (gelijke maandlasten)</span>
                     </p>
                   </motion.div>
                 </div>
@@ -618,9 +669,9 @@ export default function PrototypeC() {
 
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-3">
                 {[
-                  { value: "volledig", label: "Volledig aflossen", description: "Rente + volledige aflossing per maand" },
-                  { value: "50", label: "50% aflossen", description: "Rente + halve aflossing per maand" },
-                  { value: "zonder", label: "Zonder aflossing", description: "Alleen rente betalen per maand" },
+                  { value: "zonder", label: "Zonder aflossen", description: "Alleen rente betalen per maand" },
+                  { value: "volledig", label: "Volledig aflossen", description: "Rente + volledige aflossing per maand (annuïtair)" },
+                  { value: "50", label: "50% aflossen", description: "Rente + halve aflossing per maand (annuïtair)" },
                 ].map((option, index) => (
                   <motion.button
                     key={option.value}
@@ -708,6 +759,7 @@ export default function PrototypeC() {
                       onChange={(e) => setUserEmail(e.target.value)}
                       className="pl-12 h-14 text-lg rounded-2xl border-2 bg-white dark:bg-background shadow-lg"
                       autoFocus
+                      required
                     />
                   </div>
                   <Button type="submit" className="w-full h-14 text-lg rounded-2xl shadow-lg" size="lg" disabled={!userEmail.trim()}>
@@ -756,12 +808,21 @@ export default function PrototypeC() {
                 transition={{ delay: 0.4 }}
                 className="bg-white/80 dark:bg-background/50 backdrop-blur rounded-3xl border-2 p-6 shadow-xl"
               >
-                <CalculationResults results={results} />
+                <CalculationResults
+                  results={results}
+                  calculatorData={{
+                    propertyValue,
+                    loanAmount,
+                    duration: parseInt(duration),
+                  }}
+                  onRequestMaatwerk={handleMaatwerkRequest}
+                />
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

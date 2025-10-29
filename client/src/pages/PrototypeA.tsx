@@ -4,46 +4,40 @@ import CalculatorInput from "@/components/CalculatorInput";
 import CalculationResults from "@/components/CalculationResults";
 import LeadCaptureForm from "@/components/LeadCaptureForm";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 import type { CalculatorFormData, CalculationResult } from "@shared/schema";
+import { getInterestRate, getMaxLTV } from "@/lib/utils";
 
 export default function PrototypeA() {
   const [step, setStep] = useState<"input" | "lead" | "results">("input");
   const [calculatorData, setCalculatorData] = useState<CalculatorFormData | null>(null);
   const [results, setResults] = useState<CalculationResult | null>(null);
+  const { toast } = useToast();
 
-  const calculateResults = (data: CalculatorFormData): CalculationResult => {
+  const calculateResults = (data: CalculatorFormData & { amortizationType?: string }): CalculationResult => {
     const propertyValue = parseFloat(data.propertyValue);
     const loanAmount = parseFloat(data.loanAmount);
     const ltv = (loanAmount / propertyValue) * 100;
 
-    const durationRates: Record<string, number> = {
-      "1": 5.15,
-      "2": 5.7,
-      "3": 5.15,
-      "5": 5.05,
-      "7": 5.25,
-      "10": 5.4,
-    };
-
-    let baseRate = durationRates[data.duration] || 5.0;
-    if (data.propertyType === "zakelijk") baseRate += 0.25;
-    if (ltv > 80) baseRate += 0.25;
-    if (ltv > 90) baseRate += 0.5;
+    // Use interest rate from property type configuration
+    const interestRate = getInterestRate(data.propertyType);
 
     const duration = parseInt(data.duration);
-    const monthlyRate = baseRate / 100 / 12;
+    const monthlyRate = interestRate / 100 / 12;
     const numPayments = duration * 12;
 
     let monthlyPayment: number;
     if (data.repaymentType === "zonder") {
       monthlyPayment = loanAmount * monthlyRate;
     } else if (data.repaymentType === "50") {
+      // 50% interest-only + 50% annuity
       const interestOnlyPart = (loanAmount * 0.5) * monthlyRate;
       const amortizingPart = (loanAmount * 0.5) * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
                              (Math.pow(1 + monthlyRate, numPayments) - 1);
       monthlyPayment = interestOnlyPart + amortizingPart;
     } else {
+      // "volledig" - full repayment with annuity
       monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
                        (Math.pow(1 + monthlyRate, numPayments) - 1);
     }
@@ -56,7 +50,7 @@ export default function PrototypeA() {
 
     return {
       ltv,
-      interestRate: baseRate,
+      interestRate,
       monthlyPayment,
       duration,
       repaymentType: repaymentLabels[data.repaymentType] || data.repaymentType,
@@ -73,6 +67,14 @@ export default function PrototypeA() {
   const handleLeadSubmit = (leadData: { name: string; email: string }) => {
     console.log("Lead captured:", leadData, "Calculator data:", calculatorData);
     setStep("results");
+  };
+
+  const handleMaatwerkRequest = () => {
+    console.log("Maatwerk beoordeling aangevraagd");
+    toast({
+      title: "Maatwerk beoordeling aangevraagd",
+      description: "Een adviseur neemt binnen 24 uur contact met u op voor een vrijblijvend gesprek.",
+    });
   };
 
   return (
@@ -127,7 +129,7 @@ export default function PrototypeA() {
             </motion.div>
           )}
 
-          {step === "results" && results && (
+          {step === "results" && results && calculatorData && (
             <motion.div
               key="results"
               initial={{ opacity: 0, y: 20 }}
@@ -135,7 +137,15 @@ export default function PrototypeA() {
               transition={{ duration: 0.3 }}
               className="max-w-4xl mx-auto"
             >
-              <CalculationResults results={results} />
+              <CalculationResults
+                results={results}
+                calculatorData={{
+                  propertyValue: parseFloat(calculatorData.propertyValue),
+                  loanAmount: parseFloat(calculatorData.loanAmount),
+                  duration: parseInt(calculatorData.duration),
+                }}
+                onRequestMaatwerk={handleMaatwerkRequest}
+              />
             </motion.div>
           )}
         </AnimatePresence>

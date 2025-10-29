@@ -3,9 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, Home, Calculator, Clock, Coins } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Building2, Home, Calculator, Clock, Coins, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import type { CalculatorFormData } from "@shared/schema";
+import { formatCurrencyInput, formatCurrency, getMaxLTV, getInterestRate, type PropertyType } from "@/lib/utils";
+import PropertyTypeSelector from "@/components/PropertyTypeSelector";
+import PropertyUsageSelector from "@/components/PropertyUsageSelector";
 
 interface CalculatorInputVisualProps {
   onCalculate: (data: CalculatorFormData) => void;
@@ -13,27 +17,28 @@ interface CalculatorInputVisualProps {
   isLoading?: boolean;
 }
 
-const addressDatabase: Record<string, "zakelijk" | "woning"> = {
-  radarweg: "zakelijk",
-  "radar weg": "zakelijk",
-  zuidas: "zakelijk",
-  "de zuidas": "zakelijk",
-  kalverstraat: "zakelijk",
-  damrak: "zakelijk",
-  herengracht: "woning",
-  prinsengracht: "woning",
-  keizersgracht: "woning",
-  lelylaan: "woning",
+// Address database mapping to property types
+const addressDatabase: Record<string, PropertyType> = {
+  radarweg: "kantoor",
+  "radar weg": "kantoor",
+  zuidas: "kantoor",
+  "de zuidas": "kantoor",
+  kalverstraat: "winkel",
+  damrak: "winkel",
+  herengracht: "woning_voor_verhuur",
+  prinsengracht: "woning_voor_verhuur",
+  keizersgracht: "woning_voor_verhuur",
+  lelylaan: "woning_voor_verhuur",
 };
 
 const durationOptions = [
-  { value: "1", label: "1 jaar", rate: "5.15%" },
-  { value: "2", label: "2 jaar", rate: "5.7%" },
-  { value: "3", label: "3 jaar", rate: "5.15%" },
-  { value: "5", label: "5 jaar", rate: "5.05%" },
-  { value: "7", label: "7 jaar", rate: "5.25%" },
-  { value: "10", label: "10 jaar", rate: "5.4%" },
-];
+  { value: "1", label: "1 jaar" },
+  { value: "2", label: "2 jaar" },
+  { value: "3", label: "3 jaar" },
+  { value: "5", label: "5 jaar" },
+  { value: "7", label: "7 jaar" },
+  { value: "10", label: "10 jaar" },
+] as const;
 
 const repaymentOptions = [
   { value: "zonder", label: "Zonder aflossing", description: "Alleen rente betalen" },
@@ -46,7 +51,9 @@ export default function CalculatorInputVisual({ onCalculate, buttonText = "Berek
     propertyAddress: "",
     propertyValue: "",
     loanAmount: "",
-    propertyType: "woning",
+    propertyType: "kantoor",
+    isDutchProperty: "ja",
+    propertyUsage: "eigen_gebruik",
     duration: "10",
     repaymentType: "volledig",
   });
@@ -68,18 +75,23 @@ export default function CalculatorInputVisual({ onCalculate, buttonText = "Berek
     }
   };
 
-  const formatCurrency = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (!numbers) return "";
-    return new Intl.NumberFormat("nl-NL").format(parseInt(numbers));
-  };
-
   const handleValueChange = (field: "propertyValue" | "loanAmount", value: string) => {
     const numbers = value.replace(/\D/g, "");
     setFormData(prev => ({ ...prev, [field]: numbers }));
   };
 
-  const isFormValid = formData.propertyAddress && formData.propertyValue && formData.loanAmount;
+  // LTV validation
+  const propertyValue = parseFloat(formData.propertyValue) || 0;
+  const loanAmount = parseFloat(formData.loanAmount) || 0;
+  const currentLTV = propertyValue > 0 ? (loanAmount / propertyValue) * 100 : 0;
+  const maxLTV = getMaxLTV(formData.propertyType);
+  const maxLoanAmount = Math.floor((propertyValue * maxLTV) / 100);
+  const isLTVValid = currentLTV <= maxLTV || loanAmount === 0;
+
+  // Get interest rate for selected property type
+  const indicativeRate = getInterestRate(formData.propertyType);
+
+  const isFormValid = formData.propertyAddress && formData.propertyValue && formData.loanAmount && isLTVValid;
 
   return (
     <Card className="w-full shadow-lg" data-testid="card-calculator">
@@ -121,7 +133,7 @@ export default function CalculatorInputVisual({ onCalculate, buttonText = "Berek
                 id="propertyValue"
                 type="text"
                 placeholder="500.000"
-                value={formatCurrency(formData.propertyValue)}
+                value={formatCurrencyInput(formData.propertyValue)}
                 onChange={(e) => handleValueChange("propertyValue", e.target.value)}
                 className="w-full pl-10 h-12 text-base"
                 data-testid="input-property-value"
@@ -140,71 +152,87 @@ export default function CalculatorInputVisual({ onCalculate, buttonText = "Berek
                 id="loanAmount"
                 type="text"
                 placeholder="400.000"
-                value={formatCurrency(formData.loanAmount)}
+                value={formatCurrencyInput(formData.loanAmount)}
                 onChange={(e) => handleValueChange("loanAmount", e.target.value)}
-                className="w-full pl-10 h-12 text-base"
+                className={`w-full pl-10 h-12 text-base ${!isLTVValid ? "border-red-500" : ""}`}
                 data-testid="input-loan-amount"
               />
             </div>
+
+            {/* LTV Validation Error */}
+            {!isLTVValid && loanAmount > 0 && propertyValue > 0 && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Dit bedrag is niet mogelijk met de gekozen vastgoedtype. De maximale LTV is {maxLTV}%
+                  (max. {formatCurrency(maxLoanAmount)}). Verlaag het leningbedrag of verhoog de pandwaarde.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* LTV Info when valid */}
+            {isLTVValid && loanAmount > 0 && propertyValue > 0 && (
+              <p className="text-xs text-muted-foreground">
+                LTV: {currentLTV.toFixed(1)}% van {maxLTV}% toegestaan
+              </p>
+            )}
           </div>
 
-          {/* Property Type - Visual Cards */}
+          {/* Property Type Selector - 15 Types */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">
               Type vastgoed
             </Label>
-            <div className="grid grid-cols-3 gap-3">
+            <PropertyTypeSelector
+              value={formData.propertyType}
+              onChange={(newType) => setFormData(prev => ({ ...prev, propertyType: newType }))}
+            />
+          </div>
+
+          {/* Dutch Property */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Nederlands vastgoed?</Label>
+            <div className="grid grid-cols-2 gap-3">
               <motion.button
                 type="button"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setFormData(prev => ({ ...prev, propertyType: "woning" }))}
+                onClick={() => setFormData(prev => ({ ...prev, isDutchProperty: "ja" }))}
                 className={`p-4 rounded-xl border-2 transition-all ${
-                  formData.propertyType === "woning"
+                  formData.isDutchProperty === "ja"
                     ? "border-primary bg-primary/10 shadow-md"
                     : "border-border hover:border-primary/50 bg-card"
                 }`}
               >
-                <Home className={`h-8 w-8 mx-auto mb-2 ${formData.propertyType === "woning" ? "text-primary" : "text-muted-foreground"}`} />
-                <p className={`text-sm font-medium ${formData.propertyType === "woning" ? "text-primary" : "text-foreground"}`}>
-                  Woning
+                <p className={`text-base font-medium ${formData.isDutchProperty === "ja" ? "text-primary" : "text-foreground"}`}>
+                  Ja
                 </p>
               </motion.button>
-
               <motion.button
                 type="button"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setFormData(prev => ({ ...prev, propertyType: "zakelijk" }))}
+                onClick={() => setFormData(prev => ({ ...prev, isDutchProperty: "nee" }))}
                 className={`p-4 rounded-xl border-2 transition-all ${
-                  formData.propertyType === "zakelijk"
+                  formData.isDutchProperty === "nee"
                     ? "border-primary bg-primary/10 shadow-md"
                     : "border-border hover:border-primary/50 bg-card"
                 }`}
               >
-                <Building2 className={`h-8 w-8 mx-auto mb-2 ${formData.propertyType === "zakelijk" ? "text-primary" : "text-muted-foreground"}`} />
-                <p className={`text-sm font-medium ${formData.propertyType === "zakelijk" ? "text-primary" : "text-foreground"}`}>
-                  Zakelijk
-                </p>
-              </motion.button>
-
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setFormData(prev => ({ ...prev, propertyType: "combinatie" }))}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  formData.propertyType === "combinatie"
-                    ? "border-primary bg-primary/10 shadow-md"
-                    : "border-border hover:border-primary/50 bg-card"
-                }`}
-              >
-                <Calculator className={`h-8 w-8 mx-auto mb-2 ${formData.propertyType === "combinatie" ? "text-primary" : "text-muted-foreground"}`} />
-                <p className={`text-sm font-medium ${formData.propertyType === "combinatie" ? "text-primary" : "text-foreground"}`}>
-                  Combinatie
+                <p className={`text-base font-medium ${formData.isDutchProperty === "nee" ? "text-primary" : "text-foreground"}`}>
+                  Nee
                 </p>
               </motion.button>
             </div>
+          </div>
+
+          {/* Property Usage */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Wat is uw gebruiksdoel?</Label>
+            <PropertyUsageSelector
+              value={formData.propertyUsage}
+              onChange={(newUsage) => setFormData(prev => ({ ...prev, propertyUsage: newUsage }))}
+            />
           </div>
 
           {/* Duration - Visual Cards */}
@@ -231,7 +259,7 @@ export default function CalculatorInputVisual({ onCalculate, buttonText = "Berek
                     {option.label}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    tot {option.rate} rente
+                    {indicativeRate}% rente (indicatie)
                   </p>
                 </motion.button>
               ))}
